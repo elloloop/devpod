@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM nvidia/cuda:12.8.1-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SHELL=/bin/bash
@@ -39,11 +39,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     python3-pip \
     python3-venv \
+    python3-dev \
     ripgrep \
     fd-find \
     fzf \
     bat \
     zsh \
+    ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
 # Set locale
@@ -64,11 +66,33 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     apt-get update && apt-get install -y gh && \
     rm -rf /var/lib/apt/lists/*
 
-# Symlink fd and bat (Ubuntu packages them with different names)
+# Symlink fd and bat
 RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     ln -sf /usr/bin/batcat /usr/local/bin/bat
 
-# SSH setup — optimized for remote agent execution
+# ── uv (fast Python package manager) ──────────────────────────
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# ── autoresearch ───────────────────────────────────────────────
+RUN git clone https://github.com/karpathy/autoresearch.git /workspace/autoresearch
+WORKDIR /workspace/autoresearch
+RUN uv sync
+
+# ── General training libraries ─────────────────────────────────
+RUN pip3 install --no-cache-dir \
+    transformers \
+    accelerate \
+    safetensors \
+    huggingface-hub[cli] \
+    tokenizers \
+    sentencepiece \
+    tiktoken \
+    datasets \
+    wandb \
+    tensorboard
+
+# ── SSH Setup ──────────────────────────────────────────────────
 RUN mkdir -p /var/run/sshd /root/.ssh && \
     chmod 700 /root/.ssh && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
@@ -80,15 +104,16 @@ RUN mkdir -p /var/run/sshd /root/.ssh && \
     echo "ClientAliveInterval 60" >> /etc/ssh/sshd_config && \
     echo "ClientAliveCountMax 0" >> /etc/ssh/sshd_config
 
-RUN echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
+RUN echo 'PATH="/root/.local/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
     echo 'LANG="en_US.UTF-8"' >> /etc/environment
 
 RUN ssh-keygen -A
 
-RUN mkdir -p /workspace
+RUN mkdir -p /models
+ENV HF_HOME=/models
 WORKDIR /workspace
 
-COPY scripts/start.sh /start.sh
+COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 22

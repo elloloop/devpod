@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.8.1-devel-ubuntu22.04
+FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SHELL=/bin/bash
@@ -70,16 +70,19 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
 RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     ln -sf /usr/bin/batcat /usr/local/bin/bat
 
-# ── uv (fast Python package manager) ──────────────────────────
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
+# ── Python / PyTorch / Inference Stack ─────────────────────────
 
-# ── autoresearch ───────────────────────────────────────────────
-RUN git clone https://github.com/karpathy/autoresearch.git /workspace/autoresearch
-WORKDIR /workspace/autoresearch
-RUN uv sync
+# PyTorch with CUDA 12.4
+RUN pip3 install --no-cache-dir \
+    torch \
+    torchvision \
+    torchaudio \
+    --index-url https://download.pytorch.org/whl/cu124
 
-# ── General training libraries ─────────────────────────────────
+# vLLM — high-throughput inference engine (serves Qwen, Llama, etc.)
+RUN pip3 install --no-cache-dir vllm
+
+# Transformers ecosystem
 RUN pip3 install --no-cache-dir \
     transformers \
     accelerate \
@@ -88,11 +91,19 @@ RUN pip3 install --no-cache-dir \
     tokenizers \
     sentencepiece \
     tiktoken \
-    datasets \
-    wandb \
-    tensorboard
+    protobuf
+
+# Quantization support (run larger models on fewer GPUs)
+RUN pip3 install --no-cache-dir \
+    bitsandbytes \
+    auto-gptq \
+    autoawq
+
+# Flash Attention 2
+RUN pip3 install --no-cache-dir flash-attn --no-build-isolation
 
 # ── SSH Setup ──────────────────────────────────────────────────
+
 RUN mkdir -p /var/run/sshd /root/.ssh && \
     chmod 700 /root/.ssh && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
@@ -104,16 +115,17 @@ RUN mkdir -p /var/run/sshd /root/.ssh && \
     echo "ClientAliveInterval 60" >> /etc/ssh/sshd_config && \
     echo "ClientAliveCountMax 0" >> /etc/ssh/sshd_config
 
-RUN echo 'PATH="/root/.local/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
+RUN echo 'PATH="/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
     echo 'LANG="en_US.UTF-8"' >> /etc/environment
 
 RUN ssh-keygen -A
 
-RUN mkdir -p /models
+# Model cache directory (mount a volume here for persistence)
+RUN mkdir -p /workspace /models
 ENV HF_HOME=/models
 WORKDIR /workspace
 
-COPY scripts/start.sh /start.sh
+COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 22

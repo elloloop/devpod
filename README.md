@@ -15,7 +15,7 @@ Three container images for RunPod. Your local agent SSHes in and uses them as re
 Deploy on RunPod with the appropriate image tag. Set `PUBLIC_KEY` to your SSH public key.
 
 ```bash
-./scripts/connect.sh <pod-ip> <port> --setup
+./connect.sh <pod-ip> <port> --setup
 ssh devpod
 ```
 
@@ -82,10 +82,21 @@ uv run train.py
 | `HF_TOKEN` | Hugging Face token (for gated models) |
 | `STARTUP_SCRIPT` | Commands to run on container start |
 
+## Repository structure
+
+```
+base/           # General dev image (no CUDA)
+inference/      # LLM inference image (CUDA + vLLM)
+train/          # Training image (CUDA + autoresearch)
+connect.sh      # SSH helper script
+```
+
+Each folder has its own Dockerfile, start.sh, and GitHub Actions workflow. Workflows only trigger when files in the corresponding folder change.
+
 ## Building locally
 
 ```bash
-docker build -f base.Dockerfile -t devpod:base .
-docker build -f inference.Dockerfile -t devpod:inference .
-docker build -f train.Dockerfile -t devpod:train .
+docker build -t devpod:base base/
+docker build -t devpod:inference inference/
+docker build -t devpod:train train/
 ```
