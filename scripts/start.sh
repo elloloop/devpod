@@ -11,25 +11,8 @@ fi
 if [ -n "$AUTHORIZED_KEYS" ]; then
     echo "$AUTHORIZED_KEYS" >> /root/.ssh/authorized_keys
     chmod 600 /root/.ssh/authorized_keys
-    echo "[devpod] SSH public key installed from AUTHORIZED_KEYS"
+    echo "[devpod] Additional SSH keys installed from AUTHORIZED_KEYS"
 fi
-
-# ── Persist API Keys / Env Vars for SSH Sessions ───────────────
-# Any env var set on the container is available to the entrypoint,
-# but NOT to SSH sessions by default. Write them to a file that
-# .bashrc/.zshrc sources on login.
-env_file="/etc/devpod.env"
-: > "$env_file"
-
-for var in ANTHROPIC_API_KEY OPENAI_API_KEY HF_TOKEN GITHUB_TOKEN \
-           WANDB_API_KEY RUNPOD_API_KEY HUGGING_FACE_HUB_TOKEN; do
-    if [ -n "${!var}" ]; then
-        echo "${var}=${!var}" >> "$env_file"
-        echo "[devpod] $var forwarded to SSH sessions"
-    fi
-done
-
-chmod 600 "$env_file"
 
 # ── Git Config ─────────────────────────────────────────────────
 if [ -n "$GIT_USER_NAME" ]; then
@@ -55,7 +38,7 @@ fi
 echo "[devpod] Starting SSH server on port 22..."
 /usr/sbin/sshd -D &
 
-echo "[devpod] Container ready."
+echo "[devpod] Container ready. Waiting for connections."
 
 # Keep container alive
 wait

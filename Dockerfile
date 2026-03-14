@@ -44,7 +44,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fzf \
     bat \
     zsh \
-    stow \
     && rm -rf /var/lib/apt/lists/*
 
 # Set locale
@@ -52,7 +51,7 @@ RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Node.js LTS via nodesource
+# Node.js LTS (for tooling that needs it)
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
@@ -65,14 +64,11 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
     apt-get update && apt-get install -y gh && \
     rm -rf /var/lib/apt/lists/*
 
-# Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code
-
-# Symlink fd (Ubuntu packages it as fdfind)
+# Symlink fd and bat (Ubuntu packages them with different names)
 RUN ln -sf /usr/bin/fdfind /usr/local/bin/fd && \
     ln -sf /usr/bin/batcat /usr/local/bin/bat
 
-# SSH setup — agent-friendly config
+# SSH setup — optimized for remote agent execution
 RUN mkdir -p /var/run/sshd /root/.ssh && \
     chmod 700 /root/.ssh && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
@@ -80,19 +76,19 @@ RUN mkdir -p /var/run/sshd /root/.ssh && \
     sed -i 's/#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config && \
     sed -i 's/#AllowAgentForwarding yes/AllowAgentForwarding yes/' /etc/ssh/sshd_config && \
     sed -i 's/#AllowTcpForwarding yes/AllowTcpForwarding yes/' /etc/ssh/sshd_config && \
-    # Accept all env vars agents might need
-    echo "AcceptEnv LANG LC_* ANTHROPIC_API_KEY OPENAI_API_KEY HF_TOKEN GITHUB_TOKEN" >> /etc/ssh/sshd_config && \
-    # Long idle timeout for agent sessions
+    echo "AcceptEnv LANG LC_*" >> /etc/ssh/sshd_config && \
+    # Long idle timeout — agents run long tasks
     echo "ClientAliveInterval 60" >> /etc/ssh/sshd_config && \
     echo "ClientAliveCountMax 720" >> /etc/ssh/sshd_config
 
+# Non-interactive SSH commands must get the full PATH and env.
+# Many agents run `ssh host "command"` without a login shell,
+# so we put essentials in /etc/environment.
+RUN echo 'PATH="/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
+    echo 'LANG="en_US.UTF-8"' >> /etc/environment
+
 # Generate SSH host keys
 RUN ssh-keygen -A
-
-# Shell config for root
-RUN echo 'export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"' >> /root/.bashrc && \
-    echo '[ -f /etc/devpod.env ] && set -a && source /etc/devpod.env && set +a' >> /root/.bashrc && \
-    echo '[ -f /etc/devpod.env ] && set -a && source /etc/devpod.env && set +a' >> /root/.zshrc
 
 # Workspace directory
 RUN mkdir -p /workspace

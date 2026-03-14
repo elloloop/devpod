@@ -1,32 +1,48 @@
 #!/bin/bash
-# Helper script to connect to a RunPod devpod instance.
+# Connect to a RunPod devpod instance and optionally add it to SSH config.
 #
 # Usage:
-#   ./connect.sh <host> <port>
-#   ./connect.sh <host> <port> --claude   # launch Claude Code on the remote
+#   ./connect.sh <host> <port>            # SSH into the pod
+#   ./connect.sh <host> <port> --setup    # Add to ~/.ssh/config as "devpod"
 #
-# Examples:
-#   ./connect.sh 194.68.x.x 22055
-#   ./connect.sh 194.68.x.x 22055 --claude
+# After --setup, you can simply:
+#   ssh devpod
+#   scp file.txt devpod:/workspace/
 
 set -e
 
-HOST="${1:?Usage: connect.sh <host> <port> [--claude]}"
-PORT="${2:?Usage: connect.sh <host> <port> [--claude]}"
+HOST="${1:?Usage: connect.sh <host> <port> [--setup]}"
+PORT="${2:?Usage: connect.sh <host> <port> [--setup]}"
 MODE="${3:-}"
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ServerAliveInterval=60"
 
-if [ "$MODE" = "--claude" ]; then
-    echo "Launching Claude Code on remote ${HOST}:${PORT}..."
-    # Forward ANTHROPIC_API_KEY and start claude in the remote
-    ssh $SSH_OPTS -p "$PORT" \
-        -o SendEnv="ANTHROPIC_API_KEY" \
-        -t root@"$HOST" \
-        "cd /workspace && claude"
+if [ "$MODE" = "--setup" ]; then
+    # Remove existing devpod entry if present
+    if grep -q "^Host devpod" ~/.ssh/config 2>/dev/null; then
+        sed -i.bak '/^Host devpod$/,/^Host /{ /^Host devpod$/d; /^Host /!d; }' ~/.ssh/config
+        echo "Removed existing devpod entry from ~/.ssh/config"
+    fi
+
+    cat >> ~/.ssh/config <<SSHEOF
+
+Host devpod
+    HostName $HOST
+    Port $PORT
+    User root
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    ServerAliveInterval 60
+    ServerAliveCountMax 720
+    ForwardAgent yes
+SSHEOF
+
+    echo "Added 'devpod' to ~/.ssh/config"
+    echo ""
+    echo "You can now use:"
+    echo "  ssh devpod"
+    echo "  scp file.txt devpod:/workspace/"
+    echo "  rsync -avz ./project devpod:/workspace/"
 else
-    echo "Connecting to ${HOST}:${PORT}..."
-    ssh $SSH_OPTS -p "$PORT" \
-        -o SendEnv="ANTHROPIC_API_KEY" \
-        -A root@"$HOST"
+    ssh $SSH_OPTS -A -p "$PORT" root@"$HOST"
 fi
