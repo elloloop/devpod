@@ -1,33 +1,30 @@
 # devpod
 
-Two container images for RunPod — a lightweight base for general dev work, and a GPU image with PyTorch + vLLM for running open-source LLMs (Qwen, Llama, etc.). Your local agent SSHes in and uses them as remote machines.
+Three container images for RunPod. Your local agent SSHes in and uses them as remote machines.
 
 ## Images
 
-| Image | Tag | Use case |
+| Tag | Image | Purpose |
 |---|---|---|
-| `ghcr.io/elloloop/devpod:base` | `base` / `latest` | General dev — no CUDA, small image |
-| `ghcr.io/elloloop/devpod:gpu` | `gpu` | LLM inference — CUDA 12.4, PyTorch, vLLM |
+| `base` / `latest` | `ghcr.io/elloloop/devpod:base` | General dev — no CUDA, lightweight |
+| `inference` | `ghcr.io/elloloop/devpod:inference` | Run LLMs — CUDA 12.4, PyTorch, vLLM, quantization |
+| `train` | `ghcr.io/elloloop/devpod:train` | Train models — CUDA 12.8, PyTorch 2.9, [autoresearch](https://github.com/karpathy/autoresearch) pre-installed |
 
 ## Quick start
 
-Deploy on RunPod with the appropriate image tag and set `PUBLIC_KEY` to your SSH public key.
+Deploy on RunPod with the appropriate image tag. Set `PUBLIC_KEY` to your SSH public key.
 
 ```bash
-# Add to SSH config
 ./scripts/connect.sh <pod-ip> <port> --setup
-
-# SSH in
 ssh devpod
 ```
 
-## GPU image — running models
+## Inference image
+
+Serve Qwen, Llama, and other open-source LLMs.
 
 ```bash
-# Download a model
-huggingface-cli download Qwen/Qwen2.5-72B-Instruct-AWQ --local-dir /models/qwen-72b
-
-# Serve with vLLM
+# Download and serve a model
 vllm serve Qwen/Qwen2.5-72B-Instruct-AWQ --host 0.0.0.0 --port 8000
 
 # Or use transformers directly
@@ -39,26 +36,39 @@ print(tokenizer.decode(model.generate(**tokenizer('Hello', return_tensors='pt').
 "
 ```
 
-### Supported models
+**Included:** PyTorch (CUDA 12.4), vLLM, transformers, accelerate, flash-attn, bitsandbytes, AutoGPTQ, AutoAWQ, sentencepiece, tiktoken.
 
-Works out of the box with vLLM:
-- **Qwen** — Qwen2.5 (7B, 14B, 32B, 72B), AWQ/GPTQ quantized variants
-- **Llama** — Llama 3.x (8B, 70B)
-- **Any HuggingFace model** supported by vLLM or transformers
+Mount `/models` to persist downloaded models across restarts.
 
-Quantization libraries included (bitsandbytes, AutoGPTQ, AutoAWQ) for running larger models on fewer GPUs.
+## Train image
 
-Mount `/models` as a volume to persist downloaded models across pod restarts.
+Autonomous LLM training research with [karpathy/autoresearch](https://github.com/karpathy/autoresearch).
 
-## GPU image — what's installed
+```bash
+cd /workspace/autoresearch
 
-| Category | Packages |
+# One-time data prep (~2 min)
+uv run prepare.py
+
+# Run a single training experiment (~5 min)
+uv run train.py
+
+# Or let an agent run autonomous experiments — point Claude at program.md
+```
+
+**Included:** CUDA 12.8, PyTorch 2.9.1, uv, autoresearch (pre-cloned + deps installed), transformers, datasets, wandb, tensorboard.
+
+## All images include
+
+| Category | Tools |
 |---|---|
-| **PyTorch** | torch, torchvision, torchaudio (CUDA 12.4) |
-| **Inference** | vLLM, transformers, accelerate, flash-attn |
-| **Quantization** | bitsandbytes, auto-gptq, autoawq |
-| **Tokenizers** | sentencepiece, tiktoken, tokenizers |
-| **Tools** | Same dev tools as base image |
+| **Editor** | vim, neovim |
+| **Shell** | bash, zsh, tmux, screen |
+| **Search** | ripgrep, fd, fzf, bat |
+| **Git** | git, git-lfs, GitHub CLI |
+| **Network** | curl, wget, mosh, socat, rsync |
+| **Build** | build-essential, cmake, python3, pip, Node.js 22 |
+| **System** | htop, lsof, jq, tree |
 
 ## Environment variables
 
@@ -75,9 +85,7 @@ Mount `/models` as a volume to persist downloaded models across pod restarts.
 ## Building locally
 
 ```bash
-# Base image
 docker build -f base.Dockerfile -t devpod:base .
-
-# GPU image
-docker build -f gpu.Dockerfile -t devpod:gpu .
+docker build -f inference.Dockerfile -t devpod:inference .
+docker build -f train.Dockerfile -t devpod:train .
 ```
