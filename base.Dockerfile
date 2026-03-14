@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.4.1-devel-ubuntu22.04
+FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV SHELL=/bin/bash
@@ -51,7 +51,7 @@ RUN locale-gen en_US.UTF-8
 ENV LANG=en_US.UTF-8
 ENV LC_ALL=en_US.UTF-8
 
-# Node.js LTS (for tooling that needs it)
+# Node.js LTS
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
@@ -77,20 +77,14 @@ RUN mkdir -p /var/run/sshd /root/.ssh && \
     sed -i 's/#AllowAgentForwarding yes/AllowAgentForwarding yes/' /etc/ssh/sshd_config && \
     sed -i 's/#AllowTcpForwarding yes/AllowTcpForwarding yes/' /etc/ssh/sshd_config && \
     echo "AcceptEnv LANG LC_*" >> /etc/ssh/sshd_config && \
-    # Disable idle timeout — never drop SSH sessions
     echo "ClientAliveInterval 60" >> /etc/ssh/sshd_config && \
     echo "ClientAliveCountMax 0" >> /etc/ssh/sshd_config
 
-# Non-interactive SSH commands must get the full PATH and env.
-# Many agents run `ssh host "command"` without a login shell,
-# so we put essentials in /etc/environment.
-RUN echo 'PATH="/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
+RUN echo 'PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment && \
     echo 'LANG="en_US.UTF-8"' >> /etc/environment
 
-# Generate SSH host keys
 RUN ssh-keygen -A
 
-# Workspace directory
 RUN mkdir -p /workspace
 WORKDIR /workspace
 
@@ -98,5 +92,4 @@ COPY scripts/start.sh /start.sh
 RUN chmod +x /start.sh
 
 EXPOSE 22
-
 CMD ["/start.sh"]
