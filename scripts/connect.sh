@@ -33,7 +33,7 @@ Host devpod
     StrictHostKeyChecking no
     UserKnownHostsFile /dev/null
     ServerAliveInterval 60
-    ServerAliveCountMax 720
+    ServerAliveCountMax 0
     ForwardAgent yes
 SSHEOF
 
