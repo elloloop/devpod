@@ -99,8 +99,10 @@ RUN pip3 install --no-cache-dir \
     auto-gptq \
     autoawq
 
-# Flash Attention 2
-RUN pip3 install --no-cache-dir flash-attn --no-build-isolation
+# Flash Attention 2 — install pre-built wheel (skip source compilation)
+# vLLM bundles its own attention kernels, so this is optional but improves
+# performance with transformers. Falls back gracefully if unavailable.
+RUN pip3 install --no-cache-dir flash-attn || true
 
 # ── SSH Setup ──────────────────────────────────────────────────
 
