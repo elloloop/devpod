@@ -120,6 +120,13 @@ RUN echo 'PATH="/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/us
 
 RUN ssh-keygen -A
 
+# Bake in SSH authorized keys from build arg
+ARG SSH_AUTHORIZED_KEYS=""
+RUN if [ -n "$SSH_AUTHORIZED_KEYS" ]; then \
+      echo "$SSH_AUTHORIZED_KEYS" > /root/.ssh/authorized_keys && \
+      chmod 600 /root/.ssh/authorized_keys; \
+    fi
+
 # Model cache directory (mount a volume here for persistence)
 RUN mkdir -p /workspace /models
 ENV HF_HOME=/models

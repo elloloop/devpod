@@ -25,5 +25,7 @@ jobs:
           context: inference
           push: true
           tags: ghcr.io/${{ github.repository }}:inference
+          build-args: |
+            SSH_AUTHORIZED_KEYS=${{ secrets.SSH_AUTHORIZED_KEYS }}
           cache-from: type=gha,scope=inference
           cache-to: type=gha,mode=max,scope=inference

@@ -109,6 +109,13 @@ RUN echo 'PATH="/root/.local/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/
 
 RUN ssh-keygen -A
 
+# Bake in SSH authorized keys from build arg
+ARG SSH_AUTHORIZED_KEYS=""
+RUN if [ -n "$SSH_AUTHORIZED_KEYS" ]; then \
+      echo "$SSH_AUTHORIZED_KEYS" > /root/.ssh/authorized_keys && \
+      chmod 600 /root/.ssh/authorized_keys; \
+    fi
+
 RUN mkdir -p /models
 ENV HF_HOME=/models
 WORKDIR /workspace

@@ -25,5 +25,7 @@ jobs:
           context: train
           push: true
           tags: ghcr.io/${{ github.repository }}:train
+          build-args: |
+            SSH_AUTHORIZED_KEYS=${{ secrets.SSH_AUTHORIZED_KEYS }}
           cache-from: type=gha,scope=train
           cache-to: type=gha,mode=max,scope=train
