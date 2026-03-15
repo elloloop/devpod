@@ -114,11 +114,21 @@ If you find issues, FIX THEM before proceeding. Comment on the issue with what y
 
 Then:
 1. Run tests and make sure they pass
-2. Commit your changes
-3. Rebase on origin/main
-4. Push your branch
-5. Create a PR with "Closes #<number>" in the body
-6. Comment on the issue with results including the self-review
+2. Verify test existence — this is a HARD GATE:
+   a. Count new source files vs new test files: `git diff main...HEAD --name-only`
+   b. If you wrote source files but ZERO test files → STOP. Write tests before proceeding.
+   c. Verify every new public function/endpoint/handler has a corresponding test
+   d. Run `git diff main...HEAD --name-only | grep -E '_test\.|test_|\.test\.|\.spec\.'` — if empty, you are not done
+3. Re-run tests after writing any missing tests
+4. Commit your changes
+5. Rebase on origin/main
+6. Push your branch
+7. Create a PR with "Closes #<number>" in the body
+8. Comment on the issue with results including the self-review AND the test verification output:
+   - Number of source files changed
+   - Number of test files changed
+   - Test suite exit code
+   - List of test files added
 
 Also comment on the parent issue #<parent-number>:
   gh issue comment <parent-number> --body "### Update: #<number> (<component>)
@@ -127,12 +137,28 @@ Also comment on the parent issue #<parent-number>:
 
 Launch ALL agents in the wave simultaneously using the Agent tool with `isolation: "worktree"`. Run them in the background so they execute in parallel.
 
-### 5. Wait for agents to complete
+### 5. Wait for agents and verify test coverage
 
 As agents complete, collect their results:
 - Did they succeed or fail?
 - What PRs were created?
 - Were there any blockers?
+
+For each completed agent, verify test coverage on its branch:
+
+```bash
+# For each PR branch created by an agent:
+git fetch origin <branch>
+SOURCE_COUNT=$(git diff main..origin/<branch> --name-only | grep -v '_test\.\|test_\|\.test\.\|\.spec\.\|__tests__\|/tests/\|/test/\|gen/\|\.config\.\|\.json$\|\.yaml$\|\.yml$\|\.md$\|\.mod$\|\.sum$\|\.lock$\|\.toml$' | wc -l)
+TEST_COUNT=$(git diff main..origin/<branch> --name-only | grep -E '_test\.|test_|\.test\.|\.spec\.|__tests__|/tests/|/test/' | wc -l)
+
+echo "Agent #<number>: $SOURCE_COUNT source files, $TEST_COUNT test files"
+```
+
+**If any agent has source files > 0 and test files == 0:**
+- Mark that agent as ❌ FAILED in the wave report
+- Comment on the agent's issue: "Missing test coverage — source files were changed but no tests were added. This blocks merge."
+- Do NOT mark the agent's issue as complete
 
 ### 6. Update root issue
 
@@ -141,11 +167,11 @@ After all agents in the wave complete:
 ```
 gh issue comment <root> --body "### 🏁 Wave <N> Complete
 
-| Issue | Component | Status | PR |
-|---|---|---|---|
-| #<issue-1> | <type> | ✅ / ❌ | #<pr> |
-| #<issue-2> | <type> | ✅ / ❌ | #<pr> |
-| #<issue-3> | <type> | ✅ / ❌ | #<pr> |
+| Issue | Component | Status | PR | Test Coverage |
+|---|---|---|---|---|
+| #<issue-1> | <type> | ✅ / ❌ | #<pr> | <src>/<test> files |
+| #<issue-2> | <type> | ✅ / ❌ | #<pr> | <src>/<test> files |
+| #<issue-3> | <type> | ✅ / ❌ | #<pr> | <src>/<test> files |
 
 **Next**: <what to do next — merge PRs, run next wave, resolve blockers>
 

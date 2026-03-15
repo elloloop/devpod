@@ -14,7 +14,37 @@ git diff --cached --name-only  # staged
 git diff main...HEAD --name-only  # all changes on this branch
 ```
 
-### 2. Read every changed file
+### 2. Test existence check (BLOCKING)
+
+Before reviewing code quality, mechanically verify that tests were written for new code. This is not a subjective judgment — it is a hard gate.
+
+```bash
+# Count new/modified source files (exclude tests, generated code, config)
+SOURCE_FILES=$(git diff main...HEAD --name-only | grep -v '_test\.\|test_\|\.test\.\|\.spec\.\|__tests__\|/tests/\|/test/\|gen/\|\.config\.\|\.json$\|\.yaml$\|\.yml$\|\.md$\|\.mod$\|\.sum$\|\.lock$\|\.toml$' | wc -l)
+
+# Count new/modified test files
+TEST_FILES=$(git diff main...HEAD --name-only | grep -E '_test\.|test_|\.test\.|\.spec\.|__tests__|/tests/|/test/' | wc -l)
+
+echo "Source files changed: $SOURCE_FILES"
+echo "Test files changed: $TEST_FILES"
+```
+
+**BLOCKING rules:**
+- If source files > 0 and test files == 0 → **REJECT. Stop review immediately.** Write the missing tests before continuing.
+- If test files < (source files / 2) → **WARNING.** Likely insufficient coverage. Inspect whether every new public function/endpoint/handler has a corresponding test.
+- Verify test files actually import and exercise the changed modules — empty or stub tests are a rejection.
+
+```bash
+# Verify tests reference the changed source modules
+for test_file in $(git diff main...HEAD --name-only | grep -E '_test\.|test_|\.test\.|\.spec\.'); do
+  echo "=== $test_file ==="
+  head -30 "$test_file"  # check imports reference the module under test
+done
+```
+
+If this gate fails, write the missing tests NOW, then restart the review from step 1.
+
+### 3. Read every changed file
 
 Read each file fully. For each file, evaluate against ALL the criteria below.
 
@@ -157,13 +187,13 @@ All four levels of testing must be present where applicable:
 
 ---
 
-### 3. Fix issues found
+### 4. Fix issues found
 
 For each issue found:
 1. Fix it immediately
 2. Note what was found and fixed
 
-### 4. Report
+### 5. Report
 
 Output a summary:
 
@@ -200,3 +230,4 @@ If running as part of a ship pipeline, comment the review on the GitHub issue.
 - Don't rubber-stamp — actually read every line.
 - If something is borderline, fix it. The cost of fixing now is low.
 - Missing test coverage is a rejection. Tests are not optional.
+- The test existence check (step 2) is a HARD GATE — no amount of code quality compensates for missing tests. If step 2 fails, the review verdict is ❌ regardless of everything else.

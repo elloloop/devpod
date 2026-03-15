@@ -61,6 +61,23 @@ gh issue create --title "<title>" --body "$(cat <<'EOF'
 
 <description>
 
+## Required Test Deliverables
+
+Every sub-issue MUST include regression tests as part of the deliverable. Code without tests will be rejected by `/review`.
+
+### Minimum test requirements:
+- [ ] **Unit tests** for every new public function/method/handler
+- [ ] **Integration tests** for any new gRPC endpoint, DB query, or API route
+- [ ] **Behavior tests** for user-facing logic (test WHAT not HOW)
+- [ ] **E2E/Playwright tests** if the issue adds or modifies a user-visible feature (web/Flutter)
+
+### Test verification:
+- The PR must include test files proportional to source files (at least 1 test file per 2 source files)
+- Tests must import and exercise the actual module being built — stubs/empty tests are a rejection
+- All tests must pass: the agent must run the test suite and include the exit code in the PR description
+
+> ⚠️ If you cannot write a meaningful test (e.g., pure config, proto-only changes), explain why in the PR description. This is the ONLY acceptable exception.
+
 Parent: #<parent>
 EOF
 )" --assignee @me
@@ -89,7 +106,9 @@ gh issue comment <number> --body "## Progress
 - [x] Branch \`<branch-name>\` created
 - [ ] Contract defined
 - [ ] Development
-- [ ] Tests passing
+- [ ] Regression tests written (unit + integration)
+- [ ] Test existence verified (source:test file ratio)
+- [ ] All tests passing (exit code 0)
 - [ ] Docker tested
 - [ ] PR created
 - [ ] Deployed to staging
