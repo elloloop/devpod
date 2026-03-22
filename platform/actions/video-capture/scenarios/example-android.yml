@@ -1,0 +1,30 @@
+name: "Android App Walkthrough"
+description: "Records a walkthrough of the main app screens on an Android device"
+steps:
+  - action: pause
+    duration: 2000
+    screenshot: "home-screen"
+
+  - action: click
+    selector: "[data-testid='menu-button']"
+    wait: 1000
+    screenshot: "menu-open"
+
+  - action: click
+    selector: "[data-testid='settings']"
+    wait: 1500
+    screenshot: "settings-screen"
+
+  - action: scroll
+    direction: down
+    amount: 400
+    wait: 1000
+    screenshot: "settings-scrolled"
+
+  - action: navigate
+    url: "{{app-url}}"
+    wait: 2000
+    screenshot: "deep-link-page"
+
+  - action: pause
+    duration: 1000

@@ -1,0 +1,33 @@
+name: "User Login Flow"
+description: "Demonstrates the login and dashboard experience"
+steps:
+  - action: navigate
+    url: "{{app-url}}"
+    wait: 2000
+    screenshot: "landing-page"
+
+  - action: click
+    selector: "[data-testid='login-button']"
+    screenshot: "login-form"
+
+  - action: type
+    selector: "#email"
+    text: "demo@example.com"
+
+  - action: type
+    selector: "#password"
+    text: "demo123"
+
+  - action: click
+    selector: "[data-testid='submit']"
+    wait: 3000
+    screenshot: "dashboard"
+
+  - action: scroll
+    direction: down
+    amount: 500
+    wait: 1000
+    screenshot: "dashboard-scrolled"
+
+  - action: pause
+    duration: 2000

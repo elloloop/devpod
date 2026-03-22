@@ -1,0 +1,40 @@
+name: "iOS App Walkthrough"
+description: "Records a walkthrough of the main app screens on an iOS simulator"
+steps:
+  - action: pause
+    duration: 2000
+    screenshot: "launch-screen"
+
+  - action: click
+    selector: "[data-testid='onboarding-next']"
+    wait: 1000
+    screenshot: "onboarding-step-1"
+
+  - action: click
+    selector: "[data-testid='onboarding-next']"
+    wait: 1000
+    screenshot: "onboarding-step-2"
+
+  - action: click
+    selector: "[data-testid='get-started']"
+    wait: 2000
+    screenshot: "main-screen"
+
+  - action: hover
+    selector: "[data-testid='profile-avatar']"
+    wait: 500
+    screenshot: "profile-hover"
+
+  - action: click
+    selector: "[data-testid='profile-avatar']"
+    wait: 1500
+    screenshot: "profile-page"
+
+  - action: scroll
+    direction: down
+    amount: 600
+    wait: 1000
+    screenshot: "profile-scrolled"
+
+  - action: pause
+    duration: 1000

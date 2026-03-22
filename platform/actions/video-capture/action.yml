@@ -1,0 +1,47 @@
+name: 'Video Capture'
+description: 'Record video demos and capture screenshots of web and mobile apps'
+inputs:
+  platform:
+    description: 'Target platform: web, android, ios'
+    required: true
+  app-url:
+    description: 'Web app URL (for platform: web)'
+    required: false
+  scenario:
+    description: 'Path to scenario YAML file describing the demo flow'
+    required: true
+  output-dir:
+    description: 'Directory to store video and screenshot artifacts'
+    required: false
+    default: './artifacts/video-capture'
+  video-quality:
+    description: 'Video quality: low, medium, high'
+    required: false
+    default: 'medium'
+  viewport-width:
+    description: 'Browser viewport width (web only)'
+    required: false
+    default: '1280'
+  viewport-height:
+    description: 'Browser viewport height (web only)'
+    required: false
+    default: '720'
+  device:
+    description: 'Device name for mobile (e.g., "Pixel 7", "iPhone 15")'
+    required: false
+  headless:
+    description: 'Run browser in headless mode'
+    required: false
+    default: 'true'
+outputs:
+  video-path:
+    description: 'Path to the generated demo video'
+  screenshot-paths:
+    description: 'JSON array of screenshot file paths'
+  thumbnail-path:
+    description: 'Path to the video thumbnail image'
+  duration:
+    description: 'Video duration in seconds'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

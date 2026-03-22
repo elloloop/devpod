@@ -1,0 +1,120 @@
+name: Runner CI
+
+on:
+  push:
+    branches: [main]
+    paths: ['platform/runner/**']
+  pull_request:
+    paths: ['platform/runner/**']
+
+defaults:
+  run:
+    working-directory: platform/runner
+
+jobs:
+  lint-and-typecheck:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: platform/runner/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: platform/runner/package-lock.json
+      - run: npm ci
+      - run: npx vitest run --reporter=verbose --coverage
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: platform/runner/coverage/
+          retention-days: 14
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint-and-typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: platform/runner/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Verify dist output
+        run: test -d dist && echo "Build output exists" || (echo "Build failed - no dist/" && exit 1)
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: platform/runner/package-lock.json
+      - run: npm ci
+      - name: Start runner and test API
+        run: |
+          # Create test workspace
+          mkdir -p /tmp/ci-test/.github/workflows
+          cd /tmp/ci-test && git init && git add -A && git commit --allow-empty -m "init"
+
+          cat > /tmp/ci-test/.github/workflows/test.yml << 'EOF'
+          name: Test
+          on: workflow_dispatch
+          jobs:
+            hello:
+              steps:
+                - name: Hello
+                  run: echo "Hello from CI"
+                - name: Output test
+                  id: out
+                  run: echo "value=42" >> $GITHUB_OUTPUT
+                - name: Use output
+                  run: echo "Got ${{ steps.out.outputs.value }}"
+          EOF
+
+          # Start runner
+          cd /tmp/ci-test && PORT=4800 npx tsx $GITHUB_WORKSPACE/platform/runner/src/index.ts &
+          sleep 3
+
+          # Health check
+          curl -sf http://localhost:4800/health
+
+          # List workflows
+          WORKFLOWS=$(curl -sf http://localhost:4800/api/workflows | jq length)
+          [ "$WORKFLOWS" -ge 1 ] || (echo "No workflows found" && exit 1)
+
+          # Trigger run
+          RUN_ID=$(curl -sf -X POST http://localhost:4800/api/runs \
+            -H 'Content-Type: application/json' \
+            -d '{"workflow":"test"}' | jq -r '.id')
+
+          # Wait and check
+          sleep 5
+          STATUS=$(curl -sf "http://localhost:4800/api/runs/$RUN_ID" | jq -r '.conclusion')
+          echo "Run conclusion: $STATUS"
+          [ "$STATUS" = "success" ] || (echo "Run failed!" && curl -s "http://localhost:4800/api/runs/$RUN_ID" | jq && exit 1)
+
+          echo "Integration test passed!"
+          kill %1 2>/dev/null || true

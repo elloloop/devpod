@@ -1,0 +1,74 @@
+name: Runner Release
+
+on:
+  push:
+    tags: ['runner-v*']
+
+defaults:
+  run:
+    working-directory: platform/runner
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: platform/runner/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+
+  build-and-release:
+    name: Build & Release
+    runs-on: ubuntu-latest
+    needs: [validate]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: platform/runner/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+      - name: Package release
+        run: |
+          VERSION=${GITHUB_REF_NAME#runner-v}
+          echo "Version: $VERSION"
+
+          # Create release tarball
+          tar -czf runner-${VERSION}.tar.gz \
+            dist/ \
+            package.json \
+            package-lock.json \
+            README.md 2>/dev/null || true
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        id: package
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Runner v${{ steps.package.outputs.version }}"
+          body: |
+            ## Local GitHub Actions Runner v${{ steps.package.outputs.version }}
+
+            ### Installation
+            ```bash
+            tar xzf runner-${{ steps.package.outputs.version }}.tar.gz
+            npm install --production
+            npx tsx src/index.ts
+            ```
+          files: |
+            platform/runner/runner-*.tar.gz
+          draft: false
+          prerelease: false
