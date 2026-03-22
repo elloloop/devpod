@@ -45,19 +45,38 @@ export interface Feature {
   status: "in-progress" | "review" | "shipped";
 }
 
-export interface PullRequest {
-  number: number;
-  title: string;
-  description: string;
-  branch: string;
-  baseBranch: string;
-  author: string;
-  status: "open" | "merged" | "closed";
-  checks: WorkflowRun[];
-  feature?: string;
+export interface DiffFile {
+  path: string;
+  status: "added" | "modified" | "deleted" | "renamed";
+  additions: number;
+  deletions: number;
+  isGenerated: boolean;
   diff: string;
-  files: { path: string; additions: number; deletions: number }[];
-  createdAt: string;
+  oldPath?: string;
+}
+
+export interface PullRequest {
+  sha: string;
+  shortSha: string;
+  title: string;
+  body: string;
+  author: string;
+  date: string;
+  parentSha: string;
+  files: DiffFile[];
+  totalAdditions: number;
+  totalDeletions: number;
+  // Backward compat fields
+  number?: number;
+  branch?: string;
+  baseBranch?: string;
+  status?: string;
+  checks?: WorkflowRun[];
+  feature?: string;
+  // Legacy aliases
+  description?: string;
+  diff?: string;
+  createdAt?: string;
 }
 
 export interface ActivityItem {

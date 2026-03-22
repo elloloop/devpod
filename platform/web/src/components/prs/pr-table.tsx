@@ -9,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/shared/status-badge";
 import { DateDisplay } from "@/components/shared/date-display";
 import type { PullRequest } from "@/lib/types";
 
@@ -23,72 +22,60 @@ export function PRTable({ prs }: PRTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-16">#</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead className="w-24">Author</TableHead>
-            <TableHead className="w-28">Status</TableHead>
-            <TableHead className="w-28">Checks</TableHead>
-            <TableHead className="w-36">Feature</TableHead>
+            <TableHead className="w-24">SHA</TableHead>
+            <TableHead>Message</TableHead>
+            <TableHead className="w-28">Author</TableHead>
+            <TableHead className="w-20 text-center">Files</TableHead>
+            <TableHead className="w-24 text-right">Changes</TableHead>
             <TableHead className="w-36">Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {prs.map((pr) => {
-            const checksConclusion = pr.checks.length > 0
-              ? pr.checks.some((c) => c.conclusion === "failure")
-                ? "failure"
-                : pr.checks.every((c) => c.conclusion === "success")
-                  ? "success"
-                  : pr.checks.some((c) => c.status === "in_progress")
-                    ? "in_progress"
-                    : "queued"
-              : null;
-
-            return (
-              <TableRow key={pr.number} className="cursor-pointer hover:bg-accent/50">
-                <TableCell>
-                  <Link
-                    href={`/prs/${pr.number}`}
-                    className="text-muted-foreground font-mono"
-                  >
-                    {pr.number}
-                  </Link>
-                </TableCell>
-                <TableCell>
-                  <Link href={`/prs/${pr.number}`} className="font-medium hover:underline">
-                    {pr.title}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {pr.author}
-                </TableCell>
-                <TableCell>
-                  <StatusBadge status={pr.status} />
-                </TableCell>
-                <TableCell>
-                  {checksConclusion && (
-                    <StatusBadge status={checksConclusion} />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {pr.feature && (
-                    <Link
-                      href={`/features/${pr.feature}`}
-                      className="text-sm text-blue-400 hover:underline"
-                    >
-                      {pr.feature}
-                    </Link>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <DateDisplay
-                    date={pr.createdAt}
-                    className="text-sm text-muted-foreground"
-                  />
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {prs.map((pr) => (
+            <TableRow
+              key={pr.sha}
+              className="cursor-pointer hover:bg-accent/50"
+            >
+              <TableCell>
+                <Link
+                  href={`/prs/${pr.shortSha}`}
+                  className="font-mono text-xs text-blue-400 hover:underline"
+                >
+                  {pr.shortSha}
+                </Link>
+              </TableCell>
+              <TableCell>
+                <Link
+                  href={`/prs/${pr.shortSha}`}
+                  className="font-medium hover:underline truncate block max-w-md"
+                >
+                  {pr.title}
+                </Link>
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {pr.author}
+              </TableCell>
+              <TableCell className="text-center text-sm text-muted-foreground">
+                {pr.files.length}
+              </TableCell>
+              <TableCell className="text-right">
+                <span className="text-emerald-400 text-xs font-mono">
+                  +{pr.totalAdditions}
+                </span>
+                {pr.totalDeletions > 0 && (
+                  <span className="text-red-400 text-xs font-mono ml-1.5">
+                    -{pr.totalDeletions}
+                  </span>
+                )}
+              </TableCell>
+              <TableCell>
+                <DateDisplay
+                  date={pr.date}
+                  className="text-sm text-muted-foreground"
+                />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

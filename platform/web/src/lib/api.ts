@@ -49,11 +49,11 @@ export async function getPullRequests(): Promise<PullRequest[]> {
 }
 
 export async function getPullRequest(
-  id: number
+  id: string
 ): Promise<PullRequest | null> {
   return fetchWithFallback<PullRequest | null>(
     `/api/prs/${id}`,
-    mockPullRequests.find((pr) => pr.number === id) ?? null
+    mockPullRequests.find((pr) => pr.shortSha === id) ?? null
   );
 }
 

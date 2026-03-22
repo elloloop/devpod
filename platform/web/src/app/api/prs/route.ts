@@ -1,7 +1,27 @@
 import { NextResponse } from "next/server";
-import { mockPullRequests } from "@/lib/mock-data";
+import {
+  getRecentCommits,
+  getCommitFiles,
+  commitToPullRequest,
+} from "@/lib/git";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  // In production, this would proxy to GitHub API or read from local git
-  return NextResponse.json(mockPullRequests);
+  try {
+    const commits = getRecentCommits(20);
+
+    const prs = commits.map((commit) => {
+      const files = getCommitFiles(commit.sha);
+      return commitToPullRequest(commit, files);
+    });
+
+    return NextResponse.json(prs);
+  } catch (error) {
+    console.error("Failed to fetch git data:", error);
+    return NextResponse.json(
+      { error: "Failed to read git data" },
+      { status: 500 }
+    );
+  }
 }

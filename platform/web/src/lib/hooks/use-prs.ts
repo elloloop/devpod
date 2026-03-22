@@ -2,26 +2,20 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { PullRequest } from "../types";
-import { mockPullRequests } from "../mock-data";
 
 async function fetchPRs(): Promise<PullRequest[]> {
-  try {
-    const res = await fetch("/api/prs");
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json();
-  } catch {
-    return mockPullRequests;
-  }
+  const res = await fetch("/api/prs");
+  if (!res.ok) throw new Error("Failed to fetch PRs");
+  return res.json();
 }
 
-async function fetchPR(id: number): Promise<PullRequest | null> {
-  try {
-    const res = await fetch(`/api/prs/${id}`);
-    if (!res.ok) throw new Error("Failed to fetch");
-    return res.json();
-  } catch {
-    return mockPullRequests.find((pr) => pr.number === id) ?? null;
+async function fetchPR(id: string): Promise<PullRequest | null> {
+  const res = await fetch(`/api/prs/${id}`);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error("Failed to fetch PR");
   }
+  return res.json();
 }
 
 export function usePullRequests() {
@@ -31,7 +25,7 @@ export function usePullRequests() {
   });
 }
 
-export function usePullRequest(id: number) {
+export function usePullRequest(id: string) {
   return useQuery({
     queryKey: ["prs", id],
     queryFn: () => fetchPR(id),

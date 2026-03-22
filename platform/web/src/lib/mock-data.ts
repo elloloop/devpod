@@ -193,7 +193,7 @@ export const mockWorkflowRuns: WorkflowRun[] = [
             name: "Rolling deploy",
             status: "completed",
             conclusion: "success",
-            log: "Updating deployment...\nWaiting for rollout...\ndeployment \"platform\" successfully rolled out\n\n✓ Production deployment complete",
+            log: 'Updating deployment...\nWaiting for rollout...\ndeployment "platform" successfully rolled out\n\n✓ Production deployment complete',
           },
         ],
       },
@@ -409,351 +409,131 @@ export const mockFeatures: Feature[] = [
 
 export const mockPullRequests: PullRequest[] = [
   {
-    number: 55,
+    sha: "mock55000000000000000000000000000000000055",
+    shortSha: "mock55",
     title: "Add synthetic data generation skill",
-    description:
-      "Adds a new Claude Code skill for generating synthetic training data using LLMs. Includes configurable templates, quality scoring, and multi-format export.\n\n## Changes\n- New `datagen` skill with generation templates\n- Quality scoring pipeline using embedding similarity\n- Export support for JSONL, Parquet, HuggingFace formats\n- Unit tests and integration tests",
+    body: "Adds a new Claude Code skill for generating synthetic training data using LLMs.",
+    author: "arun",
+    date: "2026-03-22T07:30:00Z",
+    parentSha: "mock53000000000000000000000000000000000053",
+    files: [
+      { path: "skills/datagen/index.ts", status: "added", additions: 45, deletions: 0, isGenerated: false, diff: "" },
+      { path: "skills/datagen/generator.ts", status: "added", additions: 32, deletions: 0, isGenerated: false, diff: "" },
+    ],
+    totalAdditions: 213,
+    totalDeletions: 0,
+    number: 55,
     branch: "feat/synthetic-datagen",
     baseBranch: "main",
-    author: "arun",
     status: "open",
     feature: "synthetic-data-pipeline",
     createdAt: "2026-03-22T07:30:00Z",
     checks: [mockWorkflowRuns[2]],
-    diff: `--- a/skills/datagen/index.ts
-+++ b/skills/datagen/index.ts
-@@ -0,0 +1,45 @@
-+import { Skill } from '../types';
-+import { generateBatch } from './generator';
-+import { scoreSamples } from './scorer';
-+import { exportDataset } from './exporter';
-+
-+export const datagen: Skill = {
-+  name: 'datagen',
-+  description: 'Generate synthetic training data',
-+
-+  async execute(config) {
-+    const { template, count, model, format } = config;
-+
-+    console.log(\`Generating \${count} samples using \${model}...\`);
-+
-+    // Generate samples in batches
-+    const batchSize = 50;
-+    const samples = [];
-+
-+    for (let i = 0; i < count; i += batchSize) {
-+      const batch = await generateBatch({
-+        template,
-+        count: Math.min(batchSize, count - i),
-+        model,
-+      });
-+      samples.push(...batch);
-+    }
-+
-+    // Score and filter
-+    const scored = await scoreSamples(samples);
-+    const filtered = scored.filter(s => s.score >= 0.7);
-+
-+    console.log(\`Generated \${samples.length} samples, \${filtered.length} passed quality filter\`);
-+
-+    // Export
-+    const output = await exportDataset(filtered, format);
-+
-+    return {
-+      totalGenerated: samples.length,
-+      totalPassed: filtered.length,
-+      outputPath: output.path,
-+      format,
-+    };
-+  },
-+};
---- a/skills/datagen/generator.ts
-+++ b/skills/datagen/generator.ts
-@@ -0,0 +1,32 @@
-+interface GenerateConfig {
-+  template: string;
-+  count: number;
-+  model: string;
-+}
-+
-+interface Sample {
-+  id: string;
-+  input: string;
-+  output: string;
-+  metadata: Record<string, unknown>;
-+}
-+
-+export async function generateBatch(config: GenerateConfig): Promise<Sample[]> {
-+  const { template, count, model } = config;
-+
-+  const response = await fetch('http://localhost:8080/v1/completions', {
-+    method: 'POST',
-+    headers: { 'Content-Type': 'application/json' },
-+    body: JSON.stringify({
-+      model,
-+      prompt: template,
-+      n: count,
-+      temperature: 0.9,
-+    }),
-+  });
-+
-+  const data = await response.json();
-+  return data.choices.map((choice: any, i: number) => ({
-+    id: \`sample-\${Date.now()}-\${i}\`,
-+    input: template,
-+    output: choice.text,
-+    metadata: { model, temperature: 0.9 },
-+  }));
-+}`,
-    files: [
-      { path: "skills/datagen/index.ts", additions: 45, deletions: 0 },
-      { path: "skills/datagen/generator.ts", additions: 32, deletions: 0 },
-      { path: "skills/datagen/scorer.ts", additions: 28, deletions: 0 },
-      { path: "skills/datagen/exporter.ts", additions: 41, deletions: 0 },
-      { path: "skills/datagen/tests/datagen.test.ts", additions: 67, deletions: 0 },
-    ],
   },
   {
-    number: 53,
+    sha: "mock53000000000000000000000000000000000053",
+    shortSha: "mock53",
     title: "Add batch embedding support",
-    description:
-      "Adds batch processing support to the embeddings API, allowing multiple texts to be embedded in a single request for improved throughput.\n\n## Changes\n- Batch endpoint at `/v1/embeddings/batch`\n- Configurable batch size limits\n- Progress tracking for large batches\n- Updated API documentation",
+    body: "Adds batch processing support to the embeddings API.",
+    author: "arun",
+    date: "2026-03-21T15:00:00Z",
+    parentSha: "mock51000000000000000000000000000000000051",
+    files: [
+      { path: "api/embeddings/batch.ts", status: "added", additions: 38, deletions: 0, isGenerated: false, diff: "" },
+    ],
+    totalAdditions: 104,
+    totalDeletions: 3,
+    number: 53,
     branch: "feat/batch-embeddings",
     baseBranch: "main",
-    author: "arun",
     status: "open",
     feature: "embeddings-api",
     createdAt: "2026-03-21T15:00:00Z",
     checks: [mockWorkflowRuns[1]],
-    diff: `--- a/api/embeddings/batch.ts
-+++ b/api/embeddings/batch.ts
-@@ -0,0 +1,38 @@
-+import { EmbeddingModel } from './model';
-+import { validateInput } from './validation';
-+
-+interface BatchRequest {
-+  texts: string[];
-+  model?: string;
-+  dimensions?: number;
-+}
-+
-+interface BatchResponse {
-+  embeddings: number[][];
-+  model: string;
-+  usage: { totalTokens: number };
-+}
-+
-+export async function handleBatchEmbeddings(
-+  req: BatchRequest
-+): Promise<BatchResponse> {
-+  const { texts, model = 'all-MiniLM-L6-v2', dimensions } = req;
-+
-+  // Validate all inputs
-+  for (const text of texts) {
-+    validateInput(text);
-+  }
-+
-+  const embeddingModel = new EmbeddingModel(model);
-+
-+  // Process in sub-batches for memory efficiency
-+  const subBatchSize = 32;
-+  const allEmbeddings: number[][] = [];
-+  let totalTokens = 0;
-+
-+  for (let i = 0; i < texts.length; i += subBatchSize) {
-+    const batch = texts.slice(i, i + subBatchSize);
-+    const result = await embeddingModel.embed(batch, { dimensions });
-+    allEmbeddings.push(...result.embeddings);
-+    totalTokens += result.usage.totalTokens;
-+  }
-+
-+  return { embeddings: allEmbeddings, model, usage: { totalTokens } };
-+}`,
-    files: [
-      { path: "api/embeddings/batch.ts", additions: 38, deletions: 0 },
-      { path: "api/embeddings/validation.ts", additions: 12, deletions: 3 },
-      { path: "tests/embeddings-batch.test.ts", additions: 54, deletions: 0 },
-    ],
   },
   {
-    number: 51,
+    sha: "mock51000000000000000000000000000000000051",
+    shortSha: "mock51",
     title: "Add embeddings API endpoint",
-    description:
-      "Adds the core embeddings API endpoint for generating vector embeddings from text using GPU-accelerated models.\n\n## Changes\n- New `/v1/embeddings` endpoint\n- Support for multiple embedding models\n- GPU memory management integration\n- OpenAI-compatible response format",
+    body: "Adds the core embeddings API endpoint for generating vector embeddings.",
+    author: "arun",
+    date: "2026-03-20T11:00:00Z",
+    parentSha: "mock48000000000000000000000000000000000048",
+    files: [
+      { path: "api/embeddings/index.ts", status: "added", additions: 42, deletions: 0, isGenerated: false, diff: "" },
+    ],
+    totalAdditions: 145,
+    totalDeletions: 0,
+    number: 51,
     branch: "feat/embeddings-api",
     baseBranch: "main",
-    author: "arun",
     status: "open",
     feature: "embeddings-api",
     createdAt: "2026-03-20T11:00:00Z",
     checks: [mockWorkflowRuns[0]],
-    diff: `--- a/api/embeddings/index.ts
-+++ b/api/embeddings/index.ts
-@@ -0,0 +1,42 @@
-+import { Router } from 'express';
-+import { EmbeddingModel } from './model';
-+import { validateInput } from './validation';
-+
-+const router = Router();
-+
-+router.post('/v1/embeddings', async (req, res) => {
-+  try {
-+    const { input, model = 'all-MiniLM-L6-v2', dimensions } = req.body;
-+
-+    validateInput(input);
-+
-+    const embeddingModel = new EmbeddingModel(model);
-+    const result = await embeddingModel.embed(
-+      Array.isArray(input) ? input : [input],
-+      { dimensions }
-+    );
-+
-+    res.json({
-+      object: 'list',
-+      data: result.embeddings.map((embedding, i) => ({
-+        object: 'embedding',
-+        embedding,
-+        index: i,
-+      })),
-+      model,
-+      usage: result.usage,
-+    });
-+  } catch (error) {
-+    res.status(400).json({
-+      error: {
-+        message: error instanceof Error ? error.message : 'Unknown error',
-+        type: 'invalid_request_error',
-+      },
-+    });
-+  }
-+});
-+
-+export default router;`,
-    files: [
-      { path: "api/embeddings/index.ts", additions: 42, deletions: 0 },
-      { path: "api/embeddings/model.ts", additions: 85, deletions: 0 },
-      { path: "api/embeddings/validation.ts", additions: 18, deletions: 0 },
-    ],
   },
   {
-    number: 48,
+    sha: "mock48000000000000000000000000000000000048",
+    shortSha: "mock48",
     title: "Add quantization support (INT8/FP16)",
-    description:
-      "Adds model quantization support for the GPU inference engine, enabling INT8 and FP16 modes for reduced memory usage and improved throughput.",
+    body: "Adds model quantization support for the GPU inference engine.",
+    author: "arun",
+    date: "2026-03-17T09:00:00Z",
+    parentSha: "mock45000000000000000000000000000000000045",
+    files: [
+      { path: "inference/quantize.ts", status: "added", additions: 28, deletions: 0, isGenerated: false, diff: "" },
+    ],
+    totalAdditions: 85,
+    totalDeletions: 4,
+    number: 48,
     branch: "feat/quantization",
     baseBranch: "main",
-    author: "arun",
     status: "merged",
     feature: "gpu-inference-engine",
     createdAt: "2026-03-17T09:00:00Z",
-    checks: [
-      {
-        ...mockWorkflowRuns[0],
-        id: "run-010",
-        createdAt: "2026-03-17T09:05:00Z",
-      },
-    ],
-    diff: `--- a/inference/quantize.ts
-+++ b/inference/quantize.ts
-@@ -0,0 +1,28 @@
-+export type QuantizationMode = 'fp32' | 'fp16' | 'int8';
-+
-+export function quantizeWeights(
-+  weights: Float32Array,
-+  mode: QuantizationMode
-+): ArrayBuffer {
-+  switch (mode) {
-+    case 'fp16':
-+      return convertToFloat16(weights);
-+    case 'int8':
-+      return convertToInt8(weights);
-+    default:
-+      return weights.buffer;
-+  }
-+}`,
-    files: [
-      { path: "inference/quantize.ts", additions: 28, deletions: 0 },
-      { path: "inference/engine.ts", additions: 15, deletions: 4 },
-      { path: "tests/quantize.test.ts", additions: 42, deletions: 0 },
-    ],
+    checks: [{ ...mockWorkflowRuns[0], id: "run-010", createdAt: "2026-03-17T09:05:00Z" }],
   },
   {
-    number: 45,
+    sha: "mock45000000000000000000000000000000000045",
+    shortSha: "mock45",
     title: "Add batching support for inference",
-    description:
-      "Implements automatic request batching for the inference engine to maximize GPU utilization. Supports configurable batch sizes and timeout-based flushing.",
+    body: "Implements automatic request batching for the inference engine.",
+    author: "arun",
+    date: "2026-03-16T14:00:00Z",
+    parentSha: "mock42000000000000000000000000000000000042",
+    files: [
+      { path: "inference/batcher.ts", status: "added", additions: 68, deletions: 0, isGenerated: false, diff: "" },
+    ],
+    totalAdditions: 90,
+    totalDeletions: 8,
+    number: 45,
     branch: "feat/inference-batching",
     baseBranch: "main",
-    author: "arun",
     status: "merged",
     feature: "gpu-inference-engine",
     createdAt: "2026-03-16T14:00:00Z",
-    checks: [
-      {
-        ...mockWorkflowRuns[0],
-        id: "run-011",
-        createdAt: "2026-03-16T14:05:00Z",
-      },
-    ],
-    diff: `--- a/inference/batcher.ts
-+++ b/inference/batcher.ts
-@@ -0,0 +1,15 @@
-+export class RequestBatcher {
-+  private queue: Request[] = [];
-+  private timer: NodeJS.Timeout | null = null;
-+
-+  constructor(
-+    private maxBatchSize: number = 32,
-+    private flushTimeout: number = 50
-+  ) {}
-+
-+  async add(request: Request): Promise<Response> {
-+    // ... batching logic
-+  }
-+}`,
-    files: [
-      { path: "inference/batcher.ts", additions: 68, deletions: 0 },
-      { path: "inference/engine.ts", additions: 22, deletions: 8 },
-    ],
+    checks: [{ ...mockWorkflowRuns[0], id: "run-011", createdAt: "2026-03-16T14:05:00Z" }],
   },
   {
-    number: 42,
+    sha: "mock42000000000000000000000000000000000042",
+    shortSha: "mock42",
     title: "Add GPU inference engine core",
-    description:
-      "Adds the core GPU inference engine with support for transformer-based model loading, tokenization, and inference execution.",
+    body: "Adds the core GPU inference engine with support for transformer-based model loading.",
+    author: "arun",
+    date: "2026-03-14T10:00:00Z",
+    parentSha: "",
+    files: [
+      { path: "inference/engine.ts", status: "added", additions: 120, deletions: 0, isGenerated: false, diff: "" },
+    ],
+    totalAdditions: 237,
+    totalDeletions: 0,
+    number: 42,
     branch: "feat/gpu-inference",
     baseBranch: "main",
-    author: "arun",
     status: "merged",
     feature: "gpu-inference-engine",
     createdAt: "2026-03-14T10:00:00Z",
-    checks: [
-      {
-        ...mockWorkflowRuns[0],
-        id: "run-012",
-        createdAt: "2026-03-14T10:05:00Z",
-      },
-    ],
-    diff: `--- a/inference/engine.ts
-+++ b/inference/engine.ts
-@@ -0,0 +1,20 @@
-+export class InferenceEngine {
-+  private model: any;
-+
-+  async loadModel(path: string): Promise<void> {
-+    // Load model weights and config
-+  }
-+
-+  async infer(input: string): Promise<string> {
-+    // Run inference
-+    return '';
-+  }
-+}`,
-    files: [
-      { path: "inference/engine.ts", additions: 120, deletions: 0 },
-      { path: "inference/tokenizer.ts", additions: 85, deletions: 0 },
-      { path: "inference/config.ts", additions: 32, deletions: 0 },
-    ],
+    checks: [{ ...mockWorkflowRuns[0], id: "run-012", createdAt: "2026-03-14T10:05:00Z" }],
   },
 ];
 
