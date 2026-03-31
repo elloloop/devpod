@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Film,
-  GitPullRequest,
+  Layers,
   Play,
   Settings,
   ChevronLeft,
@@ -18,7 +18,7 @@ import { useState } from "react";
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/features", label: "Features", icon: Film },
-  { href: "/prs", label: "Pull Requests", icon: GitPullRequest },
+  { href: "/diffs", label: "Diffs", icon: Layers },
   { href: "/runs", label: "Workflow Runs", icon: Play },
   { href: "#", label: "Settings", icon: Settings },
 ];

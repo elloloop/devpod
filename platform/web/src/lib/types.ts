@@ -88,3 +88,42 @@ export interface ActivityItem {
   date: string;
   link: string;
 }
+
+// ─── Stacked Diffs ──────────────────────────────────────────
+
+export interface StackedDiff {
+  uuid: string;
+  position: number;
+  title: string;
+  description: string;
+  type: string;
+  status: "draft" | "submitted" | "approved" | "landed";
+  ci: "pending" | "passed" | "failed" | null;
+  commit: string;
+  files: DiffFile[];
+  additions: number;
+  deletions: number;
+  version: number;
+  created: string;
+  updated: string;
+}
+
+export interface StackedFeature {
+  name: string;
+  type: string;
+  slug: string;
+  branch: string;
+  created: string;
+  status: string;
+}
+
+export interface FeatureWithDiffs {
+  feature: StackedFeature;
+  diffs: StackedDiff[];
+  isCurrent: boolean;
+}
+
+export interface DiffDetail extends StackedDiff {
+  diff: string;
+  detailedFiles: DiffFile[];
+}
