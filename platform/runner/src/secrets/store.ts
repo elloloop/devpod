@@ -7,12 +7,15 @@
  *
  * If no master password is set (RUNNER_SECRETS_KEY env var), secrets are stored in plaintext
  * JSON (still better than nothing for local dev).
+ *
+ * Supports pluggable cloud backends (R2, GitHub) for syncing secrets across machines.
  */
 
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import type { SecretsBackend } from './backend.js';
 
 const SECRETS_DIR = path.join(os.homedir(), '.local', 'share', 'local-runner', 'secrets');
 const PBKDF2_ITERATIONS = 100_000;
@@ -41,7 +44,7 @@ function isEncryptedFile(obj: unknown): obj is EncryptedFile {
   );
 }
 
-function hashWorkspacePath(workspacePath: string): string {
+export function hashWorkspacePath(workspacePath: string): string {
   return crypto.createHash('sha256').update(workspacePath).digest('hex').slice(0, 16);
 }
 
@@ -75,11 +78,60 @@ export class SecretsStore {
   private secrets: Record<string, string> = {};
   private filePath: string = '';
   private encryptionKey: Buffer | null = null;
+  private backends: SecretsBackend[] = [];
 
   constructor() {
     const masterPassword = process.env.RUNNER_SECRETS_KEY;
     if (masterPassword) {
       this.encryptionKey = deriveKey(masterPassword);
+    }
+  }
+
+  /**
+   * Register a cloud backend for syncing secrets.
+   */
+  addBackend(backend: SecretsBackend): void {
+    if (backend.isAvailable()) {
+      this.backends.push(backend);
+    }
+  }
+
+  /**
+   * Get the list of registered backends and their availability.
+   */
+  getBackendStatus(): Array<{ name: string; available: boolean }> {
+    return this.backends.map((b) => ({ name: b.name, available: b.isAvailable() }));
+  }
+
+  /**
+   * Sync from cloud: pull from all readable backends, merge into local.
+   * Cloud values fill in missing keys; local values win on conflict.
+   * Called on startup.
+   */
+  async syncFromCloud(): Promise<void> {
+    for (const backend of this.backends) {
+      if (!backend.isAvailable()) continue;
+
+      try {
+        const cloudSecrets = await backend.pull();
+        let merged = 0;
+        for (const [key, value] of Object.entries(cloudSecrets)) {
+          // Only fill in keys we don't already have locally.
+          // Skip empty values (e.g. GitHub backend returns empty strings).
+          if (!(key in this.secrets) && value !== '') {
+            this.secrets[key] = value;
+            merged++;
+          }
+        }
+        if (merged > 0) {
+          this.save();
+          console.log(`[secrets] Synced ${merged} secret(s) from ${backend.name} backend`);
+        }
+      } catch (err) {
+        console.warn(
+          `[secrets] Failed to sync from ${backend.name}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
   }
 
@@ -127,7 +179,7 @@ export class SecretsStore {
   }
 
   /**
-   * Set a secret value.
+   * Set a secret value (local only).
    */
   setSecret(name: string, value: string): void {
     this.secrets[name] = value;
@@ -135,11 +187,53 @@ export class SecretsStore {
   }
 
   /**
-   * Delete a secret by name.
+   * Set a secret and sync to all cloud backends.
+   * Stores locally first (fast), then pushes to backends in the background.
+   */
+  async setSecretWithSync(name: string, value: string): Promise<void> {
+    this.secrets[name] = value;
+    this.save();
+
+    // Push to all backends in the background (don't await sequentially)
+    const pushPromises = this.backends
+      .filter((b) => b.isAvailable())
+      .map((b) =>
+        b.push(name, value).catch((err) => {
+          console.warn(
+            `[secrets] Failed to push '${name}' to ${b.name}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }),
+      );
+
+    await Promise.allSettled(pushPromises);
+  }
+
+  /**
+   * Delete a secret by name (local only).
    */
   deleteSecret(name: string): void {
     delete this.secrets[name];
     this.save();
+  }
+
+  /**
+   * Delete a secret and sync deletion to all cloud backends.
+   */
+  async deleteSecretWithSync(name: string): Promise<void> {
+    delete this.secrets[name];
+    this.save();
+
+    const removePromises = this.backends
+      .filter((b) => b.isAvailable())
+      .map((b) =>
+        b.remove(name).catch((err) => {
+          console.warn(
+            `[secrets] Failed to remove '${name}' from ${b.name}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }),
+      );
+
+    await Promise.allSettled(removePromises);
   }
 
   /**

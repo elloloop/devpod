@@ -2,7 +2,9 @@ import * as path from 'node:path';
 import { createServer } from './server.js';
 import { WorkflowExecutor } from './engine/executor.js';
 import { ArtifactStore } from './artifacts/store.js';
-import { SecretsStore } from './secrets/store.js';
+import { SecretsStore, hashWorkspacePath } from './secrets/store.js';
+import { R2Backend } from './secrets/r2-backend.js';
+import { GitHubBackend } from './secrets/github-backend.js';
 import { cleanupStaleSandboxes } from './engine/sandbox.js';
 
 const PORT = parseInt(process.env.PORT || '4800', 10);
@@ -21,6 +23,34 @@ const artifactsDir = path.join(WORKSPACE, '.artifacts');
 const artifactStore = new ArtifactStore(artifactsDir);
 const secretsStore = new SecretsStore();
 secretsStore.loadForWorkspace(WORKSPACE);
+
+// ── Register cloud backends ──
+
+const activeBackends: string[] = [];
+const workspaceHash = hashWorkspacePath(WORKSPACE);
+
+// R2 backend (if configured)
+if (process.env.RUNNER_R2_ACCOUNT_ID) {
+  const r2 = new R2Backend(workspaceHash);
+  if (r2.isAvailable()) {
+    secretsStore.addBackend(r2);
+    activeBackends.push('r2');
+  }
+}
+
+// GitHub backend (if gh CLI is available and authenticated)
+const ghBackend = new GitHubBackend();
+if (ghBackend.isAvailable()) {
+  secretsStore.addBackend(ghBackend);
+  activeBackends.push('github');
+}
+
+// ── Sync secrets from cloud on startup ──
+
+const startupSync = secretsStore.syncFromCloud().catch((err) => {
+  console.warn(`[secrets] Startup sync failed: ${err instanceof Error ? err.message : String(err)}`);
+});
+
 const executor = new WorkflowExecutor(WORKSPACE, artifactStore, secretsStore);
 const app = createServer(executor, WORKSPACE, secretsStore);
 
@@ -30,6 +60,13 @@ app.listen(PORT, () => {
   console.log(`  Events:    http://localhost:${PORT}/api/events`);
   console.log(`  Health:    http://localhost:${PORT}/health`);
   console.log(`  Workspace: ${WORKSPACE}`);
+
+  if (activeBackends.length > 0) {
+    console.log(`  Secrets backends: ${activeBackends.join(', ')}`);
+  } else {
+    console.log(`  Secrets backends: local only`);
+  }
+
   console.log('');
   console.log('Endpoints:');
   console.log('  POST   /api/runs                     - Trigger a workflow run');
@@ -45,5 +82,7 @@ app.listen(PORT, () => {
   console.log('  PUT    /api/secrets/:name             - Set a secret');
   console.log('  DELETE /api/secrets/:name             - Delete a secret');
   console.log('  POST   /api/secrets/import            - Import from .env format');
+  console.log('  POST   /api/secrets/sync              - Sync from cloud backends');
+  console.log('  GET    /api/secrets/status             - Backend status');
   console.log('  GET    /api/events                   - SSE real-time updates');
 });

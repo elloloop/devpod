@@ -161,20 +161,21 @@ export function createServer(executor: WorkflowExecutor, workspacePath: string, 
       res.json(names);
     });
 
-    // PUT /api/secrets/:name - Set a secret
-    router.put('/secrets/:name', (req: Request, res: Response) => {
+    // PUT /api/secrets/:name - Set a secret (syncs to cloud backends)
+    router.put('/secrets/:name', async (req: Request, res: Response) => {
       const { value } = req.body as { value?: string };
       if (value === undefined || value === null) {
         res.status(400).json({ error: 'Missing required field: value' });
         return;
       }
-      secretsStore.setSecret(req.params.name, String(value));
+      // Store locally first, then sync to backends in the background
+      await secretsStore.setSecretWithSync(req.params.name, String(value));
       res.json({ message: `Secret '${req.params.name}' saved` });
     });
 
-    // DELETE /api/secrets/:name - Delete a secret
-    router.delete('/secrets/:name', (req: Request, res: Response) => {
-      secretsStore.deleteSecret(req.params.name);
+    // DELETE /api/secrets/:name - Delete a secret (syncs to cloud backends)
+    router.delete('/secrets/:name', async (req: Request, res: Response) => {
+      await secretsStore.deleteSecretWithSync(req.params.name);
       res.json({ message: `Secret '${req.params.name}' deleted` });
     });
 
@@ -187,6 +188,23 @@ export function createServer(executor: WorkflowExecutor, workspacePath: string, 
       }
       const count = secretsStore.importEnv(content);
       res.json({ message: `Imported ${count} secrets`, count });
+    });
+
+    // POST /api/secrets/sync - Pull secrets from cloud backends and merge
+    router.post('/secrets/sync', async (_req: Request, res: Response) => {
+      try {
+        await secretsStore.syncFromCloud();
+        res.json({ message: 'Sync complete' });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        res.status(500).json({ error: message });
+      }
+    });
+
+    // GET /api/secrets/status - Show which backends are configured
+    router.get('/secrets/status', (_req: Request, res: Response) => {
+      const backends = secretsStore.getBackendStatus();
+      res.json({ backends });
     });
   }
 
