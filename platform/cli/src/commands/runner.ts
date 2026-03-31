@@ -36,8 +36,13 @@ function readPid(): number | null {
   }
 }
 
-export function registerStartCommand(program: Command): void {
-  program
+export function registerRunnerCommand(program: Command): void {
+  const runner = program
+    .command('runner')
+    .description('Manage the local runner');
+
+  // runner start
+  runner
     .command('start')
     .description('Start the runner')
     .option('-w, --workspace <path>', 'Workspace path', process.cwd())
@@ -110,7 +115,8 @@ export function registerStartCommand(program: Command): void {
       }
     });
 
-  program
+  // runner stop
+  runner
     .command('stop')
     .description('Stop the runner')
     .action(async () => {
@@ -123,7 +129,6 @@ export function registerStartCommand(program: Command): void {
 
         try {
           process.kill(pid, 'SIGTERM');
-          // Clean up PID file
           try {
             fs.unlinkSync(PID_FILE);
           } catch {
@@ -139,6 +144,35 @@ export function registerStartCommand(program: Command): void {
           } catch {
             // ignore
           }
+        }
+      } catch (err) {
+        console.error(errorMessage(err));
+        process.exit(1);
+      }
+    });
+
+  // runner status
+  runner
+    .command('status')
+    .description('Check runner status')
+    .action(async () => {
+      try {
+        const runnerUrl = api.getRunnerUrl();
+        const isUp = await api.ping();
+        const pid = readPid();
+
+        if (isUp) {
+          const pidStr = pid ? chalk.dim(` (PID ${pid})`) : '';
+          console.log(
+            `${chalk.green('\u2713')} Runner is running at ${chalk.cyan(runnerUrl)}${pidStr}`,
+          );
+        } else {
+          console.log(
+            `${chalk.red('\u2717')} Runner is not running at ${chalk.dim(runnerUrl)}`,
+          );
+          console.log(
+            chalk.dim('  Start with: devpod runner start'),
+          );
         }
       } catch (err) {
         console.error(errorMessage(err));

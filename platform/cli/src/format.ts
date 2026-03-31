@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import type { DiffStatus, ChangeType, FeatureData, DiffData } from './workspace';
 
 export function statusIcon(status: string): string {
   switch (status) {
@@ -148,4 +149,67 @@ export function errorMessage(err: unknown): string {
     return chalk.red(`Error: ${err.message}`);
   }
   return chalk.red(`Error: ${String(err)}`);
+}
+
+// ---------------------------------------------------------------------------
+// Diff / Feature helpers
+// ---------------------------------------------------------------------------
+
+export function diffLabel(position: number): string {
+  return `D${position}`;
+}
+
+export function diffStatusIcon(status: DiffStatus): string {
+  switch (status) {
+    case 'draft':     return '\u25cb';  // ○
+    case 'submitted': return '\u25d1';  // ◑
+    case 'approved':  return '\u2713';  // ✓
+    case 'landed':    return '\u25cf';  // ●
+    default:          return '\u2022';  // •
+  }
+}
+
+export function featureTypePrefix(type: ChangeType): string {
+  switch (type) {
+    case 'feature': return 'feat';
+    case 'fix':     return 'fix';
+    case 'docs':    return 'docs';
+    case 'chore':   return 'chore';
+    default:        return 'feat';
+  }
+}
+
+export function contextLine(feature: FeatureData | null, diff: DiffData | null): string {
+  const parts: string[] = [];
+  if (feature) parts.push(feature.branch || feature.slug);
+  if (diff) parts.push(diffLabel(diff.position));
+  return parts.join(' > ');
+}
+
+export function conflictMessage(file: string): string {
+  return [
+    `The file ${chalk.bold(file)} has conflicting changes.`,
+    '',
+    'To resolve:',
+    `  1. Open ${chalk.cyan(file)} and look for conflict markers (<<<, ===, >>>)`,
+    '  2. Keep the version you want and delete the markers',
+    '  3. Save the file',
+  ].join('\n');
+}
+
+export function nextStepHint(action: string): string {
+  switch (action) {
+    case 'diff':
+      return chalk.dim('Run "devpod submit" to create a pull request, or "devpod diff" to add another change.');
+    case 'sync':
+      return chalk.dim('Your branch is up to date. Run "devpod diff" to continue working.');
+    case 'edit':
+      return chalk.dim('Run "devpod submit" to update the pull request with your edits.');
+    case 'submit':
+      return chalk.dim('Waiting for review. Run "devpod land" after approval to merge.');
+    case 'land':
+      return chalk.dim('Change landed. Run "devpod sync" to start fresh.');
+    default:
+      return '';
+  }
 }
