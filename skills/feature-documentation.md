@@ -1,17 +1,17 @@
-# Feature Documentation — Generate Visual Feature Docs with Video Evidence
+# Feature Documentation — Generate and Publish to Featuredocs
 
-Generate visual feature documentation — screenshots, video demos, and a structured markdown file — after PRs are created. The output is displayed on the local web dashboard. Run this manually or as part of the `/feature` pipeline.
+Generate visual feature documentation — video demos, screenshots, and structured markdown — then publish to the [featuredocs](https://github.com/elloloop/featuredocs) platform. Stakeholders view the result at the featuredocs web UI without touching code.
 
 ## Arguments
 
-$ARGUMENTS: `"<feature title>" [--prs 101,102,103] [--scenario path/to/scenario.yml]`
+$ARGUMENTS: `"<feature title>" [--prs 101,102,103] [--product <name>] [--version <semver>] [--scenario path/to/scenario.yml]`
 
 Examples:
-- `/feature-documentation "User authentication flow" --prs 101,102,103`
-- `/feature-documentation "Checkout redesign" --prs 88`
+- `/feature-documentation "User authentication flow" --prs 101,102,103 --product streammind --version 0.3.0`
+- `/feature-documentation "Checkout redesign" --prs 88 --product nesta`
 - `/feature-documentation "Dark mode support" --scenario scenarios/dark-mode.yml`
 
-If no arguments provided, ask the user for the feature title and relevant PR numbers.
+If `--product` is not provided, infer from the repo name. If `--version` is not provided, use the latest version from `docs/features.json` or default to `0.1.0`.
 
 ## Steps
 
@@ -20,55 +20,98 @@ If no arguments provided, ask the user for the feature title and relevant PR num
 Read PR descriptions, diffs, and related issues to understand the feature.
 
 ```bash
-# If --prs provided, read each PR
 for PR in <pr-numbers>; do
   gh pr view $PR
   gh pr diff $PR --name-only
 done
 ```
 
-If no `--prs` provided, attempt to detect them:
+If no `--prs` provided, detect from current issue:
 ```bash
-# Check .claude/issue for current issue number
 ISSUE=$(cat .claude/issue 2>/dev/null)
 if [ -n "$ISSUE" ]; then
   gh pr list --search "closes #$ISSUE" --json number,title,state
 fi
 ```
 
-From the PR diffs, identify:
-- **App type**: web, android, ios (look at file extensions and directory structure)
-- **Changed UI components**: routes, pages, screens, components
+From the diffs, identify:
+- **App type**: web, android, ios (from file extensions and directory structure)
+- **Changed UI components**: routes, pages, screens
 - **User-facing behavior**: what the user sees and does
 
-### 2. Generate slug and output directory
+### 2. Ensure featuredocs is available
+
+Check if the `featuredocs` CLI is installed. If not, clone and set it up:
 
 ```bash
-SLUG=$(echo "<feature-title>" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
-DATE=$(date +%Y-%m-%d)
-DOC_DIR="docs/features/${DATE}-${SLUG}"
-mkdir -p "${DOC_DIR}/screenshots"
+# Check if featuredocs CLI exists
+if ! command -v featuredocs &>/dev/null; then
+  # Check if the repo is cloned locally
+  FEATUREDOCS_DIR="${FEATUREDOCS_DIR:-$HOME/projects/featuredocs}"
+  if [ ! -d "$FEATUREDOCS_DIR" ]; then
+    echo "Cloning featuredocs..."
+    git clone https://github.com/elloloop/featuredocs.git "$FEATUREDOCS_DIR"
+  fi
+  # Install CLI deps
+  cd "$FEATUREDOCS_DIR/cli" && npm install
+  # Make CLI available
+  alias featuredocs="npx tsx $FEATUREDOCS_DIR/cli/bin/featuredocs.ts"
+fi
 ```
 
-### 3. Generate scenario (if not provided)
+### 3. Initialize featuredocs structure (if needed)
 
-If `--scenario` was provided, read and validate it. Otherwise, auto-generate one.
+If this is the first feature doc for this product, scaffold the docs directory:
 
-Analyze the PR diffs to determine:
-1. **Changed files** — identify UI components, routes, pages
-2. **Entry point** — what URL or screen shows this feature
-3. **Key interactions** — buttons, forms, state changes visible in the diff
+```bash
+PRODUCT="${PRODUCT:-$(basename $(gh repo view --json name -q '.name'))}"
+VERSION="${VERSION:-0.1.0}"
+SLUG=$(echo "<feature-title>" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//;s/-$//')
 
-Generate a scenario YAML:
+# Check if docs/ structure exists in the project
+if [ ! -f "docs/product.json" ]; then
+  mkdir -p docs/en
 
-```yaml
+  cat > docs/product.json << PRODUCT_EOF
+{
+  "name": "$PRODUCT",
+  "tagline": "",
+  "defaultLocale": "en",
+  "locales": ["en"],
+  "defaultVersion": "$VERSION",
+  "versions": ["$VERSION"]
+}
+PRODUCT_EOF
+
+  cat > docs/features.json << FEATURES_EOF
+{
+  "version": "$VERSION",
+  "status": "draft",
+  "features": []
+}
+FEATURES_EOF
+fi
+```
+
+### 4. Record demo video
+
+Generate a Playwright scenario from the PR diffs, then record.
+
+**Analyze diffs to build scenario:**
+1. Identify changed UI routes/components from the diff
+2. Determine the entry URL for the feature
+3. Script the key user interaction (navigate → interact → verify)
+
+Write the scenario:
+```bash
+WORK_DIR=$(mktemp -d)
+cat > "$WORK_DIR/scenario.yml" << 'SCENARIO_EOF'
 name: "Feature Demo - <title>"
-app_type: "web"  # or android, ios
 steps:
   - action: navigate
     url: "http://localhost:3000/<path-to-feature>"
     wait: 2000
-    screenshot: "01-initial-state"
+    screenshot: "01-initial"
   - action: click
     selector: "[data-testid='key-element']"
     wait: 1000
@@ -76,250 +119,237 @@ steps:
   - action: wait
     duration: 1000
     screenshot: "03-result"
-```
-
-Write the scenario to the doc directory:
-```bash
-cat > "${DOC_DIR}/scenario.yml" << 'SCENARIO_EOF'
-<generated scenario YAML>
 SCENARIO_EOF
 ```
 
-**Scenario generation rules:**
-- Prefer `data-testid` selectors over CSS classes
-- Include a `navigate` step first to reach the feature
-- Add a screenshot step after each meaningful state change
-- Keep scenarios under 10 steps — focus on the happy path
-- If no UI changes are detected in the diffs (e.g., backend-only changes), skip video capture entirely and create text-only documentation
-
-### 4. Trigger video capture
-
-Check if the actions runner is available:
+**Record with Playwright:**
 
 ```bash
-RUNNER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4800/api/health 2>/dev/null || echo "000")
-```
+# Use the devpod video capture action or record directly
+mkdir -p "$WORK_DIR/videos" "$WORK_DIR/screenshots"
 
-If the runner is available (status 200), trigger the video-capture workflow:
+# Check if local runner is available for video-capture action
+RUNNER_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:4800/health 2>/dev/null || echo "000")
 
-```bash
-RUN_ID=$(curl -s -X POST http://localhost:4800/api/runs \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"workflow\": \"video-capture\",
-    \"inputs\": {
-      \"scenario\": \"${DOC_DIR}/scenario.yml\",
-      \"output_dir\": \"${DOC_DIR}\",
-      \"video_file\": \"demo.mp4\",
-      \"screenshot_dir\": \"screenshots\"
-    }
-  }" | jq -r '.id')
+if [ "$RUNNER_STATUS" = "200" ]; then
+  # Use the actions runner
+  RUN_ID=$(curl -s -X POST http://localhost:4800/api/runs \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"workflow\": \"video-capture\",
+      \"inputs\": {
+        \"scenario\": \"$WORK_DIR/scenario.yml\",
+        \"output_dir\": \"$WORK_DIR\",
+        \"platform\": \"web\"
+      }
+    }" | jq -r '.id')
 
-echo "Run started: $RUN_ID"
-```
-
-Poll for completion:
-
-```bash
-while true; do
-  STATUS=$(curl -s http://localhost:4800/api/runs/${RUN_ID} | jq -r '.status')
-  case "$STATUS" in
-    "completed") echo "Video capture complete"; break ;;
-    "failed") echo "Video capture failed"; break ;;
-    *) sleep 5 ;;
-  esac
-done
-```
-
-Collect artifacts:
-
-```bash
-# Verify artifacts exist
-ls -la "${DOC_DIR}/demo.mp4" 2>/dev/null
-ls -la "${DOC_DIR}/screenshots/"*.png 2>/dev/null
+  # Wait for completion
+  while true; do
+    STATUS=$(curl -s "http://localhost:4800/api/runs/$RUN_ID" | jq -r '.status')
+    case "$STATUS" in
+      "completed") break ;;
+      "failed") echo "Video capture failed"; break ;;
+      *) sleep 3 ;;
+    esac
+  done
+else
+  # Direct Playwright recording fallback
+  node -e "
+  const { chromium } = require('playwright');
+  (async () => {
+    const browser = await chromium.launch();
+    const ctx = await browser.newContext({
+      viewport: { width: 1280, height: 720 },
+      colorScheme: 'dark',
+      recordVideo: { dir: '$WORK_DIR/videos/', size: { width: 1280, height: 720 } }
+    });
+    const page = await ctx.newPage();
+    // Execute scenario steps here
+    await page.goto('<feature-url>', { waitUntil: 'networkidle' });
+    await page.waitForTimeout(2000);
+    await page.screenshot({ path: '$WORK_DIR/screenshots/01-initial.png' });
+    // ... more steps from scenario
+    await page.close();
+    await ctx.close();
+    await browser.close();
+  })();
+  "
+fi
 ```
 
 **Graceful degradation:**
-- If runner is not running (status 000 or non-200) → skip video capture, create text-only docs
-- If video capture fails → create docs without video, note the failure in `feature.md`
-- If artifacts are missing → list what was captured and what was not
+- If Playwright not available → skip video, create text-only docs
+- If runner not running → fall back to direct Playwright
+- If app not running → skip video, note in docs
 
-### 5. Generate feature documentation
+### 5. Add feature to featuredocs
 
-Build the screenshot list from what actually exists:
+Register the feature in `features.json` and write the markdown:
 
 ```bash
-SCREENSHOTS=""
-for img in "${DOC_DIR}/screenshots/"*.png; do
-  [ -f "$img" ] && SCREENSHOTS="${SCREENSHOTS}\n  - \"./screenshots/$(basename $img)\""
-done
+# Add feature entry via CLI or manually
+featuredocs add "$SLUG" --title "<Feature Title>"
+
+# Or manually update features.json
+python3 -c "
+import json
+with open('docs/features.json', 'r+') as f:
+    data = json.load(f)
+    if not any(feat['slug'] == '$SLUG' for feat in data['features']):
+        data['features'].append({
+            'slug': '$SLUG',
+            'title': {'en': '<Feature Title>'},
+            'summary': {'en': '<2-3 sentence summary from PR analysis>'},
+            'device': 'desktop',
+            'orientation': 'landscape',
+            'video': 'demo_${SLUG}.mp4'
+        })
+        f.seek(0)
+        json.dump(data, f, indent=2)
+        f.truncate()
+"
 ```
 
-Build the PR table from gathered context:
+Write the feature markdown with embedded video:
 
 ```bash
-PR_TABLE=""
-for PR in <pr-numbers>; do
-  TITLE=$(gh pr view $PR --json title -q '.title')
-  STATE=$(gh pr view $PR --json state -q '.state')
-  REPO=$(gh repo view --json nameWithOwner -q '.nameWithOwner')
-  PR_TABLE="${PR_TABLE}\n| #${PR} | ${TITLE} | ${STATE} |"
-done
-```
+cat > "docs/en/${SLUG}.md" << 'MD_EOF'
+# <Feature Title>
 
-Write `feature.md`:
+<2-3 sentence summary derived from PR descriptions and code changes>
 
-```bash
-cat > "${DOC_DIR}/feature.md" << 'DOC_EOF'
----
-title: "<Feature Title>"
-slug: "<feature-slug>"
-date: "<YYYY-MM-DD>"
-status: "review"
-prs:
-  - number: <pr-number>
-    title: "<PR title>"
-    repo: "<owner/repo>"
-    status: "<open|merged|closed>"
-video: "./demo.mp4"
-screenshots:
-  - "./screenshots/01-initial-state.png"
-  - "./screenshots/02-interaction.png"
-  - "./screenshots/03-result.png"
----
+## Overview
 
-## Summary
+<What this feature does and why it matters, written for non-technical stakeholders>
 
-<Auto-generated 2-3 sentence summary of what this feature does, derived from PR descriptions and diffs>
+::video[videos/demo_<slug>.mp4]
+
+## How It Works
+
+<Step-by-step description of the user experience>
+
+1. <First step>
+2. <Second step>
+3. <Result>
 
 ## What Changed
 
-<Bullet points of key changes across all PRs>
+<Technical bullet points grouped by area — for developers who want detail>
 
-## Demo
+- **Frontend**: <changes>
+- **Backend**: <changes>
+- **Infrastructure**: <changes>
 
-Video: [Watch demo](./demo.mp4)
-
-### Screenshots
-
-| Step | Screenshot |
-|------|-----------|
-| Initial state | ![](./screenshots/01-initial-state.png) |
-| User interaction | ![](./screenshots/02-interaction.png) |
-| Result | ![](./screenshots/03-result.png) |
-
-## Pull Requests
+## Related Pull Requests
 
 | PR | Title | Status |
 |----|-------|--------|
-| #101 | PR title here | Open |
-DOC_EOF
+| #<number> | <title> | <status> |
+MD_EOF
 ```
 
-**Frontmatter rules:**
-- `status` is always `"review"` when first generated
-- `video` field is omitted if video capture was skipped or failed
-- `screenshots` list only includes files that actually exist on disk
-- `prs` list is built from the actual PR data, not hardcoded
-
 **Content rules:**
-- Summary is 2-3 sentences derived from reading the PR descriptions and diffs
-- "What Changed" is a bullet list of key changes, grouped by area (backend, frontend, etc.)
-- Screenshot table only includes rows for screenshots that exist
-- If video was not captured, replace the Demo section with a note explaining why
+- Write for stakeholders first — lead with the user impact, not the technical details
+- Use `::video[path]` syntax for embedded videos (featuredocs renders these as interactive players)
+- Summary should be factual, derived from actual PR changes
+- Keep markdown clean — featuredocs renders it with goldmark
 
-### 6. Update tracking
-
-Comment on related issues and PRs with a link to the feature documentation:
+### 6. Copy video to docs
 
 ```bash
-# Comment on each PR
+# Move recorded video to the standard location
+VIDEO_FILE=$(ls "$WORK_DIR/videos/"*.webm "$WORK_DIR/videos/"*.mp4 2>/dev/null | head -1)
+if [ -n "$VIDEO_FILE" ]; then
+  # Convert to mp4 if needed (featuredocs expects mp4)
+  if [[ "$VIDEO_FILE" == *.webm ]]; then
+    if command -v ffmpeg &>/dev/null; then
+      ffmpeg -i "$VIDEO_FILE" -c:v libx264 -crf 23 -preset fast "docs/videos/demo_${SLUG}.mp4" -y 2>/dev/null
+    else
+      cp "$VIDEO_FILE" "docs/videos/demo_${SLUG}.webm"
+      # Update features.json video field to .webm
+    fi
+  else
+    cp "$VIDEO_FILE" "docs/videos/demo_${SLUG}.mp4"
+  fi
+  echo "Video ready: docs/videos/demo_${SLUG}.mp4"
+fi
+
+# Copy screenshots
+for img in "$WORK_DIR/screenshots/"*.png; do
+  [ -f "$img" ] && cp "$img" "docs/screenshots/"
+done
+```
+
+### 7. Publish to featuredocs
+
+```bash
+featuredocs publish \
+  --product "$PRODUCT" \
+  --version "$VERSION" \
+  --videos-dir docs/videos \
+  --live
+```
+
+This uploads videos to R2, copies content to the featuredocs content directory, and marks the version as published. The featuredocs web UI will show the new feature immediately.
+
+### 8. Update tracking
+
+```bash
+# Get the featuredocs URL
+FEATUREDOCS_URL="${FEATUREDOCS_URL:-https://featuredocs.elloloop.com}"
+FEATURE_URL="${FEATUREDOCS_URL}/${PRODUCT}/en/${SLUG}/${VERSION}"
+
+# Comment on PRs
 for PR in <pr-numbers>; do
   gh pr comment $PR --body "### Feature Documentation
 
-Documentation generated: \`${DOC_DIR}/feature.md\`
-Dashboard: http://localhost:3000/features/${SLUG}
+Published to featuredocs: ${FEATURE_URL}
 
-View the feature demo and screenshots in the documentation directory."
+View the feature demo video and documentation at the link above."
 done
 
-# Comment on the issue if one exists
+# Comment on issue
 ISSUE=$(cat .claude/issue 2>/dev/null)
 if [ -n "$ISSUE" ]; then
   gh issue comment $ISSUE --body "### Feature Documentation
 
-Documentation generated: \`${DOC_DIR}/feature.md\`
-Dashboard: http://localhost:3000/features/${SLUG}
+Published: ${FEATURE_URL}
 
-Includes: <video | screenshots | text-only> documentation."
+Includes: video demo, screenshots, and stakeholder-facing documentation."
 fi
 ```
 
-### 7. Report
-
-Output a summary:
+### 9. Report
 
 ```
-## Feature Documentation Generated
+## Feature Documentation Published
 
 **Feature**: <title>
-**Directory**: <DOC_DIR>/
-**Dashboard**: http://localhost:3000/features/<slug>
+**Product**: <product> v<version>
+**URL**: <featuredocs-url>/<product>/en/<slug>/<version>
 
 ### Artifacts
-- feature.md: ✅
-- demo.mp4: ✅ / ⏭️ Skipped (runner unavailable) / ❌ Failed
+- Video: ✅ / ⏭️ Skipped / ❌ Failed
 - Screenshots: <count> captured
+- Markdown: ✅ Published to featuredocs
 
 ### Pull Requests
 | PR | Title | Status |
 |----|-------|--------|
 | #101 | ... | Open |
 
-**Next steps:**
-- Review the documentation at the dashboard URL
-- Update status from "review" to "published" when approved
-- Run `/bugfix-evidence` for any related bug fixes
+**View**: Open the featuredocs URL above to see the published documentation.
 ```
-
-## Platform-Specific Scenarios
-
-### Web (Playwright-based)
-
-Scenario steps use standard web selectors:
-- `navigate` with URL
-- `click`, `type`, `select` with CSS selectors (prefer `data-testid`)
-- `wait` for animations or async loads
-- `screenshot` after each significant step
-
-### Android
-
-Scenario steps use Android UI Automator selectors:
-- `launch` with package name
-- `tap` with resource ID or text
-- `scroll` with direction
-- `screenshot` after each significant step
-
-### iOS
-
-Scenario steps use XCUITest selectors:
-- `launch` with bundle ID
-- `tap` with accessibility identifier or label
-- `swipe` with direction
-- `screenshot` after each significant step
-
-## Bugfix Evidence Variant
-
-For simpler bug fix documentation, use `/bugfix-evidence` instead. It captures before/after screenshots without video, producing a minimal evidence document showing the bug and the fix side by side.
 
 ## Important
 
-- The feature doc directory structure must match `docs/features/YYYY-MM-DD-{slug}/` exactly — the Next.js dashboard parses this path
-- Frontmatter in `feature.md` must be valid YAML — the dashboard uses gray-matter to parse it
-- Never block on video capture failure — always produce at least a text-only doc
-- Screenshots must be numbered with zero-padded two-digit prefixes (`01-`, `02-`, etc.) for correct ordering
-- Scenario YAML is always written to the doc directory even if provided via `--scenario` (copy it in)
-- The `status` field in frontmatter controls dashboard visibility: `"review"` (default), `"published"`, `"archived"`
-- Do not hardcode PR data — always read it live from GitHub via `gh`
-- If no UI changes are detected across all PRs, create text-only documentation and note "No UI changes" in the summary
-- Keep the generated summary factual and derived from the actual code changes — do not embellish
+- The target output format is **featuredocs** (product.json, features.json, locale markdown with `::video[]` syntax), NOT the devpod `docs/features/` format
+- Videos should be mp4 (featuredocs standard). Convert webm to mp4 via ffmpeg if needed.
+- Use `::video[videos/filename.mp4]` in markdown — this is featuredocs' custom syntax for embedded video players
+- Write documentation for **stakeholders**, not developers. Lead with user impact.
+- Never block on video capture failure — always publish at least text-only documentation
+- If `featuredocs` CLI is not available, write the files manually in the correct format
+- The `--live` flag on publish marks the version as published (visible). Without it, the version is draft.
+- Keep the generated summary factual and derived from actual code changes — do not embellish
+- Do not hardcode PR data — always read live from GitHub via `gh`
