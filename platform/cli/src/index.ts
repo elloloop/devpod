@@ -6,6 +6,7 @@ import { registerSecretCommand } from './commands/secret';
 import { registerStatusCommand } from './commands/status';
 import { registerStartCommand } from './commands/start';
 import { registerDashboardCommand } from './commands/dashboard';
+import { registerPrCommand } from './commands/pr';
 
 const program = new Command();
 
@@ -21,5 +22,6 @@ registerSecretCommand(program);
 registerStatusCommand(program);
 registerStartCommand(program);
 registerDashboardCommand(program);
+registerPrCommand(program);
 
 program.parse();
