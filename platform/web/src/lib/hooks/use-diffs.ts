@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { FeatureWithDiffs, DiffDetail } from "../types";
 
 async function fetchFeaturesDiffs(): Promise<FeatureWithDiffs[]> {
@@ -9,8 +9,11 @@ async function fetchFeaturesDiffs(): Promise<FeatureWithDiffs[]> {
   return res.json();
 }
 
-async function fetchDiffDetail(uuid: string): Promise<DiffDetail | null> {
-  const res = await fetch(`/api/diffs/${uuid}`);
+async function fetchDiffBySlugPosition(
+  slug: string,
+  position: number
+): Promise<DiffDetail | null> {
+  const res = await fetch(`/api/diffs/${slug}/${position}`);
   if (!res.ok) {
     if (res.status === 404) return null;
     throw new Error("Failed to fetch diff");
@@ -18,18 +21,13 @@ async function fetchDiffDetail(uuid: string): Promise<DiffDetail | null> {
   return res.json();
 }
 
-async function approveDiff(uuid: string): Promise<void> {
-  const res = await fetch(`/api/diffs/${uuid}/approve`, { method: "POST" });
-  if (!res.ok) throw new Error("Failed to approve diff");
-}
-
-async function rejectDiff(uuid: string, comment: string): Promise<void> {
-  const res = await fetch(`/api/diffs/${uuid}/reject`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ comment }),
-  });
-  if (!res.ok) throw new Error("Failed to request changes");
+async function fetchDiffByUuid(uuid: string): Promise<DiffDetail | null> {
+  const res = await fetch(`/api/diffs/_by-uuid/${uuid}`);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error("Failed to fetch diff");
+  }
+  return res.json();
 }
 
 export function useFeaturesDiffs() {
@@ -41,36 +39,16 @@ export function useFeaturesDiffs() {
 
 export function useDiffDetail(uuid: string) {
   return useQuery({
-    queryKey: ["diffs", uuid],
-    queryFn: () => fetchDiffDetail(uuid),
+    queryKey: ["diffs", "uuid", uuid],
+    queryFn: () => fetchDiffByUuid(uuid),
     enabled: !!uuid,
   });
 }
 
-export function useApproveDiff() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: approveDiff,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diffs"] });
-    },
-  });
-}
-
-export function useRejectDiff() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      uuid,
-      comment,
-    }: {
-      uuid: string;
-      comment: string;
-    }) => rejectDiff(uuid, comment),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["diffs"] });
-    },
+export function useDiffBySlugPosition(slug: string, position: number) {
+  return useQuery({
+    queryKey: ["diffs", slug, position],
+    queryFn: () => fetchDiffBySlugPosition(slug, position),
+    enabled: !!slug && position > 0,
   });
 }

@@ -3,43 +3,65 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useApproveDiff, useRejectDiff } from "@/lib/hooks/use-diffs";
+import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 
 interface ReviewPanelProps {
   uuid: string;
+  featureSlug?: string;
+  position?: number;
   status: string;
   className?: string;
 }
 
-export function ReviewPanel({ uuid, status, className }: ReviewPanelProps) {
+export function ReviewPanel({
+  uuid,
+  featureSlug,
+  position,
+  status,
+  className,
+}: ReviewPanelProps) {
   const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState<"approve" | "reject" | null>(null);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
   } | null>(null);
+  const queryClient = useQueryClient();
 
-  const approveMutation = useApproveDiff();
-  const rejectMutation = useRejectDiff();
+  const basePath =
+    featureSlug && position
+      ? `/api/diffs/${featureSlug}/${position}`
+      : `/api/diffs/_by-uuid/${uuid}`;
 
   const handleApprove = async () => {
+    setLoading("approve");
     try {
-      await approveMutation.mutateAsync(uuid);
+      await fetch(`${basePath}/approve`, { method: "POST" });
       setFeedback({ type: "success", message: "Diff approved" });
       setComment("");
+      queryClient.invalidateQueries({ queryKey: ["diffs"] });
     } catch {
       setFeedback({ type: "error", message: "Failed to approve" });
     }
+    setLoading(null);
   };
 
   const handleReject = async () => {
+    setLoading("reject");
     try {
-      await rejectMutation.mutateAsync({ uuid, comment });
+      await fetch(`${basePath}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment }),
+      });
       setFeedback({ type: "success", message: "Changes requested" });
       setComment("");
+      queryClient.invalidateQueries({ queryKey: ["diffs"] });
     } catch {
       setFeedback({ type: "error", message: "Failed to request changes" });
     }
+    setLoading(null);
   };
 
   return (
@@ -71,18 +93,18 @@ export function ReviewPanel({ uuid, status, className }: ReviewPanelProps) {
         <Button
           size="sm"
           onClick={handleApprove}
-          disabled={approveMutation.isPending || status === "landed"}
+          disabled={loading !== null || status === "landed"}
           className="bg-emerald-600 hover:bg-emerald-700 text-white"
         >
-          {approveMutation.isPending ? "Approving..." : "Approve"}
+          {loading === "approve" ? "Approving..." : "Approve"}
         </Button>
         <Button
           size="sm"
           variant="destructive"
           onClick={handleReject}
-          disabled={rejectMutation.isPending || status === "landed"}
+          disabled={loading !== null || status === "landed"}
         >
-          {rejectMutation.isPending ? "Submitting..." : "Request Changes"}
+          {loading === "reject" ? "Submitting..." : "Request Changes"}
         </Button>
       </div>
 

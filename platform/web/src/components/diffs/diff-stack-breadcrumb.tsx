@@ -7,6 +7,7 @@ import type { StackedDiff } from "@/lib/types";
 interface DiffStackBreadcrumbProps {
   diffs: StackedDiff[];
   currentUuid: string;
+  featureSlug?: string;
   className?: string;
 }
 
@@ -27,6 +28,7 @@ const statusColor: Record<string, string> = {
 export function DiffStackBreadcrumb({
   diffs,
   currentUuid,
+  featureSlug = "",
   className,
 }: DiffStackBreadcrumbProps) {
   return (
@@ -41,7 +43,7 @@ export function DiffStackBreadcrumb({
               <span className="text-muted-foreground mx-0.5">{"\u2192"}</span>
             )}
             <Link
-              href={`/diffs/${diff.uuid}`}
+              href={`/diffs/${featureSlug}/${diff.position}`}
               className={cn(
                 "inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-xs transition-colors",
                 isCurrent

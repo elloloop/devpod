@@ -1,0 +1,156 @@
+import { NextResponse } from "next/server";
+import { execSync } from "child_process";
+import { readFileSync, existsSync, readdirSync } from "fs";
+import { join } from "path";
+import { isGeneratedFile } from "@/lib/generated-files";
+import type { DiffFile } from "@/lib/types";
+import { mockStackedDiffs } from "@/lib/mock-data";
+
+export const dynamic = "force-dynamic";
+
+function getWorkspaceDir(): string {
+  return process.env.WORKSPACE_DIR || "/Users/arun/projects/devpod";
+}
+
+function git(command: string): string {
+  try {
+    return execSync(`git ${command}`, {
+      cwd: getWorkspaceDir(),
+      encoding: "utf-8",
+      maxBuffer: 10 * 1024 * 1024,
+    }).trim();
+  } catch {
+    return "";
+  }
+}
+
+function splitDiffByFile(diff: string): Map<string, string> {
+  const result = new Map<string, string>();
+  const lines = diff.split("\n");
+  let currentPath = "";
+  let currentLines: string[] = [];
+
+  for (const line of lines) {
+    if (line.startsWith("diff --git")) {
+      if (currentPath && currentLines.length > 0) {
+        result.set(currentPath, currentLines.join("\n"));
+      }
+      currentLines = [line];
+      currentPath = "";
+    } else if (line.startsWith("+++ b/") && !currentPath) {
+      currentPath = line.replace("+++ b/", "");
+      currentLines.push(line);
+    } else if (line.startsWith("+++ /dev/null") && !currentPath) {
+      const prevLine = currentLines.find((l) => l.startsWith("--- a/"));
+      if (prevLine) currentPath = prevLine.replace("--- a/", "");
+      currentLines.push(line);
+    } else {
+      currentLines.push(line);
+    }
+  }
+  if (currentPath && currentLines.length > 0) {
+    result.set(currentPath, currentLines.join("\n"));
+  }
+  return result;
+}
+
+function getDetailedFiles(sha: string): DiffFile[] {
+  const numstat = git(`diff-tree --no-commit-id -r --numstat ${sha}`);
+  if (!numstat) return [];
+
+  const diffOutput = git(`diff ${sha}~1..${sha}`);
+  const fileDiffs = diffOutput ? splitDiffByFile(diffOutput) : new Map<string, string>();
+
+  return numstat
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const parts = line.split("\t");
+      if (parts.length < 3) return null;
+      const additions = parts[0] === "-" ? 0 : parseInt(parts[0], 10);
+      const deletions = parts[1] === "-" ? 0 : parseInt(parts[1], 10);
+      const filePath = parts[2];
+      let status: DiffFile["status"] = "modified";
+      if (additions > 0 && deletions === 0) status = "added";
+      else if (additions === 0 && deletions > 0) status = "deleted";
+      return {
+        path: filePath,
+        status,
+        additions,
+        deletions,
+        isGenerated: isGeneratedFile(filePath),
+        diff: fileDiffs.get(filePath) || "",
+      };
+    })
+    .filter((f): f is NonNullable<typeof f> => f !== null) as DiffFile[];
+}
+
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ slug: string; position: string }> }
+) {
+  const { slug, position } = await params;
+  const posNum = parseInt(position, 10);
+
+  try {
+    // Try .devpod/ first
+    const workspaceDir = getWorkspaceDir();
+    const diffsDir = join(workspaceDir, ".devpod", "diffs");
+    const featuresDir = join(workspaceDir, ".devpod", "features");
+
+    if (existsSync(diffsDir) && existsSync(featuresDir)) {
+      // Find the feature
+      const featureFiles = readdirSync(featuresDir).filter((f) => f.endsWith(".json"));
+      for (const ff of featureFiles) {
+        const featureData = JSON.parse(readFileSync(join(featuresDir, ff), "utf-8"));
+        if (featureData.slug !== slug) continue;
+
+        // Find the diff by position
+        const diffFiles = readdirSync(diffsDir).filter((f) => f.endsWith(".json"));
+        for (const df of diffFiles) {
+          const diffData = JSON.parse(readFileSync(join(diffsDir, df), "utf-8"));
+          if (diffData.feature === slug && diffData.position === posNum) {
+            const detailedFiles = diffData.commit ? getDetailedFiles(diffData.commit) : [];
+            return NextResponse.json({
+              uuid: diffData.uuid,
+              position: posNum,
+              title: diffData.title || "",
+              description: diffData.description || "",
+              type: diffData.type || featureData.type || "feature",
+              status: diffData.status || "draft",
+              ci: diffData.ci || null,
+              commit: diffData.commit || "",
+              files: detailedFiles.map((f) => ({ path: f.path, status: f.status, additions: f.additions, deletions: f.deletions })),
+              additions: detailedFiles.reduce((s, f) => s + f.additions, 0),
+              deletions: detailedFiles.reduce((s, f) => s + f.deletions, 0),
+              version: diffData.version || 1,
+              created: diffData.created || "",
+              updated: diffData.updated || "",
+              diff: diffData.commit ? git(`show ${diffData.commit}`) : "",
+              detailedFiles,
+            });
+          }
+        }
+      }
+    }
+
+    // Fall back to mock data
+    for (const feature of mockStackedDiffs) {
+      if (feature.feature.slug === slug) {
+        const diff = feature.diffs.find((d) => d.position === posNum);
+        if (diff) {
+          return NextResponse.json({
+            ...diff,
+            diff: "",
+            detailedFiles: diff.files,
+          });
+        }
+      }
+    }
+
+    return NextResponse.json({ error: "Diff not found" }, { status: 404 });
+  } catch (error) {
+    console.error("Failed to fetch diff:", error);
+    return NextResponse.json({ error: "Failed to read diff data" }, { status: 500 });
+  }
+}

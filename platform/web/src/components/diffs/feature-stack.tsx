@@ -80,7 +80,7 @@ export function FeatureStack({ data }: FeatureStackProps) {
 
                 {/* Diff row */}
                 <Link
-                  href={`/diffs/${diff.uuid}`}
+                  href={`/diffs/${feature.slug}/${diff.position}`}
                   className="flex-1 group rounded-md px-3 py-2 -mx-1 transition-colors hover:bg-accent/50 mb-1 min-w-0"
                 >
                   <div className="flex items-start justify-between gap-3">
