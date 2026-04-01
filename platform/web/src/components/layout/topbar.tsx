@@ -1,12 +1,20 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { Sun, Moon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/providers/theme-provider";
 
+/** Pattern: /diffs/<slug>/<position-number> — full-viewport review mode */
+const DIFF_REVIEW_RE = /^\/diffs\/[^/]+\/\d+/;
+
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
+  const pathname = usePathname();
+
+  // Hide topbar on diff review pages (they have their own header)
+  if (DIFF_REVIEW_RE.test(pathname)) return null;
 
   return (
     <header className="flex items-center justify-between border-b bg-card px-6 py-3">

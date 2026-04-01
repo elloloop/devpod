@@ -5,6 +5,7 @@ import type {
   ActivityItem,
   Artifact,
   FeatureWithDiffs,
+  DiffVersionInfo,
 } from "./types";
 
 export const mockWorkflowRuns: WorkflowRun[] = [
@@ -845,3 +846,138 @@ export const mockStackedDiffs: FeatureWithDiffs[] = [
     isCurrent: false,
   },
 ];
+
+// ─── Mock Version Histories ────────────────────────────────
+// Keyed by "slug/position"
+
+export const mockVersionHistories: Record<string, DiffVersionInfo[]> = {
+  "user-authentication/1": [
+    {
+      snapshotId: "S1",
+      snapshotSha: "abc001abc001abc001abc001abc001abc001abc0",
+      version: 1,
+      action: "create",
+      message: "add auth API endpoints",
+      date: "2026-03-28T10:45:00Z",
+      stack: "D1v1",
+    },
+    {
+      snapshotId: "S4",
+      snapshotSha: "abc004abc004abc004abc004abc004abc004abc0",
+      version: 2,
+      action: "update",
+      message: "fix imports in auth API",
+      date: "2026-03-29T14:20:00Z",
+      stack: "D1v2,D2v1,D3v1",
+    },
+  ],
+  "user-authentication/2": [
+    {
+      snapshotId: "S2",
+      snapshotSha: "abc002abc002abc002abc002abc002abc002abc0",
+      version: 1,
+      action: "create",
+      message: "add login form",
+      date: "2026-03-29T09:00:00Z",
+      stack: "D1v1,D2v1",
+    },
+  ],
+  "user-authentication/3": [
+    {
+      snapshotId: "S3",
+      snapshotSha: "abc003abc003abc003abc003abc003abc003abc0",
+      version: 1,
+      action: "create",
+      message: "add E2E tests",
+      date: "2026-03-30T14:00:00Z",
+      stack: "D1v1,D2v1,D3v1",
+    },
+  ],
+  "fix-token-refresh/1": [
+    {
+      snapshotId: "S1",
+      snapshotSha: "def001def001def001def001def001def001def0",
+      version: 1,
+      action: "create",
+      message: "handle expired refresh tokens",
+      date: "2026-03-27T16:15:00Z",
+      stack: "D1v1",
+    },
+    {
+      snapshotId: "S3",
+      snapshotSha: "def003def003def003def003def003def003def0",
+      version: 2,
+      action: "update",
+      message: "clear stale tokens on expiry",
+      date: "2026-03-28T11:00:00Z",
+      stack: "D1v2,D2v1",
+    },
+    {
+      snapshotId: "S5",
+      snapshotSha: "def005def005def005def005def005def005def0",
+      version: 3,
+      action: "update",
+      message: "add retry with backoff",
+      date: "2026-03-29T10:00:00Z",
+      stack: "D1v3,D2v1",
+    },
+  ],
+  "fix-token-refresh/2": [
+    {
+      snapshotId: "S2",
+      snapshotSha: "def002def002def002def002def002def002def0",
+      version: 1,
+      action: "create",
+      message: "add refresh token rotation",
+      date: "2026-03-28T09:00:00Z",
+      stack: "D1v1,D2v1",
+    },
+  ],
+  "update-api-docs/1": [
+    {
+      snapshotId: "S1",
+      snapshotSha: "eee001eee001eee001eee001eee001eee001eee0",
+      version: 1,
+      action: "create",
+      message: "initial API docs update",
+      date: "2026-03-25T10:30:00Z",
+      stack: "D1v1",
+    },
+    {
+      snapshotId: "S2",
+      snapshotSha: "eee002eee002eee002eee002eee002eee002eee0",
+      version: 2,
+      action: "update",
+      message: "add request/response examples",
+      date: "2026-03-26T09:00:00Z",
+      stack: "D1v2",
+    },
+  ],
+  "search-redesign/1": [
+    {
+      snapshotId: "S1",
+      snapshotSha: "fff001fff001fff001fff001fff001fff001fff0",
+      version: 1,
+      action: "create",
+      message: "add fuzzy matching",
+      date: "2026-03-30T08:15:00Z",
+      stack: "D1v1",
+    },
+  ],
+};
+
+// Flat list of all snapshots across all features (for timeline view)
+export const mockSnapshotTimeline: Record<string, DiffVersionInfo[]> = {
+  "user-authentication": [
+    { snapshotId: "S1", snapshotSha: "abc001abc001abc001abc001abc001abc001abc0", version: 1, action: "create", message: "D1: add auth API endpoints", date: "2026-03-28T10:45:00Z", stack: "D1v1" },
+    { snapshotId: "S2", snapshotSha: "abc002abc002abc002abc002abc002abc002abc0", version: 1, action: "create", message: "D2: add login form", date: "2026-03-29T09:00:00Z", stack: "D1v1,D2v1" },
+    { snapshotId: "S3", snapshotSha: "abc003abc003abc003abc003abc003abc003abc0", version: 1, action: "create", message: "D3: add E2E tests", date: "2026-03-30T14:00:00Z", stack: "D1v1,D2v1,D3v1" },
+    { snapshotId: "S4", snapshotSha: "abc004abc004abc004abc004abc004abc004abc0", version: 2, action: "update", message: "D1: fix imports in auth API", date: "2026-03-29T14:20:00Z", stack: "D1v2,D2v1,D3v1" },
+  ],
+  "fix-token-refresh": [
+    { snapshotId: "S1", snapshotSha: "def001def001def001def001def001def001def0", version: 1, action: "create", message: "D1: handle expired refresh tokens", date: "2026-03-27T16:15:00Z", stack: "D1v1" },
+    { snapshotId: "S2", snapshotSha: "def002def002def002def002def002def002def0", version: 1, action: "create", message: "D2: add refresh token rotation", date: "2026-03-28T09:00:00Z", stack: "D1v1,D2v1" },
+    { snapshotId: "S3", snapshotSha: "def003def003def003def003def003def003def0", version: 2, action: "update", message: "D1: clear stale tokens on expiry", date: "2026-03-28T11:00:00Z", stack: "D1v2,D2v1" },
+    { snapshotId: "S5", snapshotSha: "def005def005def005def005def005def005def0", version: 3, action: "update", message: "D1: add retry with backoff", date: "2026-03-29T10:00:00Z", stack: "D1v3,D2v1" },
+  ],
+};
