@@ -6,3 +6,6 @@ dist/
 .next/
 .artifacts/
 coverage/
+*.webm
+*.mp4
+docs/demos/
