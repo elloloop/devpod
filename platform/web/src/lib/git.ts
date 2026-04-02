@@ -197,7 +197,8 @@ function splitDiffByFile(diff: string): Map<string, string> {
 }
 
 export function getFileAtCommit(sha: string, path: string): string | null {
-  if (!/^[a-f0-9]{4,40}$/i.test(sha)) return null;
+  // Allow hex SHAs with optional ~N or ^N suffix (parent refs)
+  if (!/^[a-f0-9]{4,40}([~^]\d*)*$/i.test(sha)) return null;
   if (path.includes("..")) return null;
 
   try {

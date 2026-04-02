@@ -4,9 +4,16 @@ import { Sun, Moon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/providers/theme-provider";
+import { usePathname } from "next/navigation";
 
 export function Topbar() {
   const { theme, toggleTheme } = useTheme();
+  const pathname = usePathname();
+
+  // Hide on diff review pages — full screen for the editor
+  if (/^\/diffs\/[^/]+\/\d+/.test(pathname)) {
+    return null;
+  }
 
   return (
     <header className="flex items-center justify-between border-b bg-card px-6 py-3">
