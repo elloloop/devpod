@@ -168,8 +168,12 @@ func newSubmitCmd() *cobra.Command {
 			// Print summary
 			fmt.Printf("%s Submitted %d diff%s\n", format.SuccessMsg("\u2713"), len(draftDiffs), plural)
 
+			// Local dashboard first — this is the primary review surface
+			dashURL := fmt.Sprintf("http://localhost:3000/diffs/%s", feature.Slug)
+			fmt.Printf("  Review:  %s\n", format.SuccessMsg(dashURL))
+
 			if prURL != "" {
-				fmt.Printf("  PR: %s\n", prURL)
+				fmt.Printf("  GitHub:  %s\n", format.DimText(prURL))
 			}
 
 			// Show stack
