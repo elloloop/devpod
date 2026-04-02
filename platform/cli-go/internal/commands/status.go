@@ -46,7 +46,11 @@ func newStatusCmd() *cobra.Command {
 					sorted := sortDiffsByPosition(diffs)
 					var stackParts []string
 					for _, d := range sorted {
-						stackParts = append(stackParts, fmt.Sprintf("%s %s", format.DiffLabel(d.Position), format.DiffStatusIcon(string(d.Status))))
+						vLabel := ""
+						if d.Version > 1 {
+							vLabel = fmt.Sprintf(" v%d", d.Version)
+						}
+						stackParts = append(stackParts, fmt.Sprintf("%s%s %s", format.DiffLabel(d.Position), vLabel, format.DiffStatusIcon(string(d.Status))))
 					}
 					fmt.Printf("Stack:   %s\n", joinArrow(stackParts))
 				}
@@ -58,6 +62,13 @@ func newStatusCmd() *cobra.Command {
 					}
 				}
 
+				// Show pending rebase warning
+				if workspace.HasPendingRebase() {
+					fmt.Println()
+					fmt.Println(format.WarnMsg("Interrupted operation in progress."))
+					fmt.Println(format.DimText("  Run: devpod diff --continue  or  devpod diff --abort"))
+				}
+
 				fmt.Println()
 			}
 
@@ -65,7 +76,7 @@ func newStatusCmd() *cobra.Command {
 			changes, err := git.GetChangedFiles()
 			if err == nil {
 				if len(changes) > 0 {
-					fmt.Println("Changed files:")
+					fmt.Printf("Changed files (%d):\n", len(changes))
 					for _, change := range changes {
 						var statusLabel string
 						switch change.Status {
@@ -134,7 +145,7 @@ func newStatusCmd() *cobra.Command {
 					icon := format.StatusIcon(run.Status)
 					when := ""
 					if run.StartedAt != "" {
-						when = fmt.Sprintf(" \u2014 %s", format.RelativeTime(run.StartedAt))
+						when = fmt.Sprintf(" -- %s", format.RelativeTime(run.StartedAt))
 					}
 					fmt.Printf("  %s %s%s\n", icon, run.Workflow, when)
 				}

@@ -48,7 +48,11 @@ func newFeaturesCmd() *cobra.Command {
 					sorted := sortDiffsByPosition(diffs)
 					var parts []string
 					for _, d := range sorted {
-						parts = append(parts, fmt.Sprintf("%s %s", format.DiffLabel(d.Position), format.DiffStatusIcon(string(d.Status))))
+						vLabel := ""
+						if d.Version > 1 {
+							vLabel = fmt.Sprintf(" v%d", d.Version)
+						}
+						parts = append(parts, fmt.Sprintf("%s%s %s", format.DiffLabel(d.Position), vLabel, format.DiffStatusIcon(string(d.Status))))
 					}
 					label := "diffs"
 					if len(diffs) == 1 {
@@ -57,12 +61,23 @@ func newFeaturesCmd() *cobra.Command {
 					diffSummary = fmt.Sprintf("%d %s (%s)", len(diffs), label, strings.Join(parts, ", "))
 				}
 
+				// Show versions branch info
+				vbInfo := ""
+				if feature.VersionsBranch != "" && feature.SnapshotCount > 0 {
+					snapLabel := "snapshots"
+					if feature.SnapshotCount == 1 {
+						snapLabel = "snapshot"
+					}
+					vbInfo = fmt.Sprintf("  %d %s", feature.SnapshotCount, snapLabel)
+				}
+
 				timeStr := format.RelativeTime(feature.Created)
 				nameDisplay := feature.Name
 
-				fmt.Printf("  %s %s    %s   %s   %s\n",
+				fmt.Printf("  %s %s    %s   %s%s   %s\n",
 					markerStr, nameDisplay,
 					format.DimText(prefix), diffSummary,
+					format.DimText(vbInfo),
 					format.DimText(timeStr))
 			}
 
@@ -78,21 +93,9 @@ func newDiffsCmd() *cobra.Command {
 		Use:   "diffs",
 		Short: "List diffs for the current feature",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			features := workspace.ListFeatures()
-			currentBranch, _ := git.GetCurrentBranch()
-
-			var feature *workspace.FeatureData
-			for _, f := range features {
-				if f.Branch == currentBranch {
-					feature = &f
-					break
-				}
-			}
-
-			if feature == nil {
-				fmt.Println(format.ErrorMsg("No active feature."))
-				fmt.Println(format.DimText("Start one with: devpod feature \"name\""))
-				return fmt.Errorf("no active feature")
+			feature, err := workspace.ValidateOnFeatureBranch()
+			if err != nil {
+				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
 			}
 
 			diffs := workspace.LoadDiffsForFeature(*feature)
@@ -107,13 +110,17 @@ func newDiffsCmd() *cobra.Command {
 			if len(diffs) == 1 {
 				plural = ""
 			}
-			fmt.Printf("%s \u2014 %d diff%s\n", feature.Name, len(diffs), plural)
+			fmt.Printf("%s -- %d diff%s\n", feature.Name, len(diffs), plural)
 			fmt.Println()
 
 			sorted := sortDiffsByPosition(diffs)
 			for _, d := range sorted {
 				icon := format.DiffStatusIcon(string(d.Status))
 				label := format.DiffLabel(d.Position)
+				vLabel := ""
+				if d.Version > 1 {
+					vLabel = fmt.Sprintf(" v%d", d.Version)
+				}
 				stats := fmt.Sprintf("+%d -%d", d.Additions, d.Deletions)
 
 				var ciLabel string
@@ -128,7 +135,7 @@ func newDiffsCmd() *cobra.Command {
 					ciLabel = ""
 				}
 
-				fmt.Printf("  %s %s  %s  %s  %s\n", icon, label, d.Title, stats, ciLabel)
+				fmt.Printf("  %s %s%s  %s  %s  %s\n", icon, label, vLabel, d.Title, stats, ciLabel)
 
 				if len(d.Files) > 0 {
 					var fileList string

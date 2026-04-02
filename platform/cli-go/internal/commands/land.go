@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/elloloop/devpod/platform/cli-go/internal/format"
 	"github.com/elloloop/devpod/platform/cli-go/internal/git"
 	"github.com/elloloop/devpod/platform/cli-go/internal/workspace"
@@ -17,13 +18,26 @@ func newLandCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "land [label]",
 		Short: "Land the lowest approved diff onto the main codebase",
-		Args:  cobra.MaximumNArgs(1),
+		Long: `Squash-merges the bottom diff from your stack onto main.
+
+Diffs must be landed in order (D1 first, then D2, etc.).
+After landing, remaining diffs are rebased and a snapshot is taken.`,
+		Args: cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			feature := workspace.GetCurrentFeature()
-			if feature == nil {
-				fmt.Println(format.ErrorMsg("No active feature."))
-				fmt.Println(format.DimText("Start one with: devpod feature \"name\""))
-				return fmt.Errorf("no active feature")
+			// Check for pending rebase
+			if err := workspace.CheckPendingRebase(); err != nil {
+				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
+			}
+
+			// Check for uncommitted changes
+			if workspace.HasUncommittedChanges() {
+				return fmt.Errorf("%s\n\n  Save your changes first with: devpod diff",
+					format.ErrorMsg("You have unsaved changes."))
+			}
+
+			feature, err := workspace.ValidateOnFeatureBranch()
+			if err != nil {
+				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
 			}
 
 			diffs := sortDiffsByPosition(workspace.LoadDiffsForFeature(*feature))
@@ -33,7 +47,7 @@ func newLandCmd() *cobra.Command {
 				return nil
 			}
 
-			// Find unlanded diffs
+			// Check if all diffs are landed (feature complete)
 			var unlandedDiffs []workspace.DiffData
 			for _, d := range diffs {
 				if d.Status != "landed" {
@@ -47,9 +61,8 @@ func newLandCmd() *cobra.Command {
 				label := args[0]
 				position, ok := parseDiffPosition(label)
 				if !ok {
-					msg := fmt.Sprintf("Invalid diff label: %s. Use format D1, D2, etc.", label)
-					fmt.Println(format.ErrorMsg(msg))
-					return fmt.Errorf("%s", msg)
+					return fmt.Errorf("%s\n\n  Use format D1, D2, etc.",
+						format.ErrorMsg(fmt.Sprintf("Invalid diff label: %s.", label)))
 				}
 
 				var found *workspace.DiffData
@@ -60,23 +73,22 @@ func newLandCmd() *cobra.Command {
 					}
 				}
 				if found == nil {
-					msg := fmt.Sprintf("%s not found.", format.DiffLabel(position))
-					fmt.Println(format.ErrorMsg(msg))
-					return fmt.Errorf("%s", msg)
+					return fmt.Errorf("%s",
+						format.ErrorMsg(fmt.Sprintf("%s not found.", format.DiffLabel(position))))
 				}
 
 				// Must be the bottom (lowest position) un-landed diff
 				if len(unlandedDiffs) > 0 && found.Position != unlandedDiffs[0].Position {
-					msg := fmt.Sprintf("%s is not the lowest diff. Land %s first.",
-						format.DiffLabel(position), format.DiffLabel(unlandedDiffs[0].Position))
-					fmt.Println(format.ErrorMsg(msg))
-					return fmt.Errorf("%s", msg)
+					return fmt.Errorf("%s\n\n  Land %s first.",
+						format.ErrorMsg(fmt.Sprintf("%s is not the lowest un-landed diff.", format.DiffLabel(position))),
+						format.DiffLabel(unlandedDiffs[0].Position))
 				}
 
 				targetDiff = *found
 			} else {
 				if len(unlandedDiffs) == 0 {
 					fmt.Println(format.DimText("All diffs already landed."))
+					fmt.Println(format.DimText("  Start a new feature with: devpod feature \"name\""))
 					return nil
 				}
 				targetDiff = unlandedDiffs[0]
@@ -85,11 +97,10 @@ func newLandCmd() *cobra.Command {
 			// Check status
 			if !force {
 				if targetDiff.Status != "approved" && targetDiff.CI != "passed" {
-					fmt.Println(format.WarnMsg(fmt.Sprintf(
-						"%s has not been approved and CI has not passed.",
-						format.DiffLabel(targetDiff.Position))))
-					fmt.Println(format.DimText("Use --force to land anyway."))
-					return fmt.Errorf("not approved")
+					return fmt.Errorf("%s\n\n  Use --force to land anyway.",
+						format.WarnMsg(fmt.Sprintf(
+							"%s has not been approved and CI has not passed.",
+							format.DiffLabel(targetDiff.Position))))
 				}
 			}
 
@@ -108,6 +119,10 @@ func newLandCmd() *cobra.Command {
 
 			config := workspace.LoadConfig()
 			featureBranch := feature.Branch
+
+			s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+			s.Suffix = fmt.Sprintf(" Landing %s...", format.DiffLabel(targetDiff.Position))
+			s.Start()
 
 			// Switch to main, pull latest
 			_ = git.SwitchBranch(config.DefaultBranch)
@@ -148,12 +163,14 @@ func newLandCmd() *cobra.Command {
 				}
 			}
 
+			s.Stop()
+
 			// Update landed diff
 			targetDiff.Status = "landed"
 			targetDiff.Updated = time.Now().UTC().Format(time.RFC3339)
 			_ = workspace.SaveDiff(targetDiff)
 
-			// Remove from feature's diffs list
+			// Remove from feature's diffs list (keep ID stable)
 			var newDiffs []string
 			for _, id := range feature.Diffs {
 				if id != targetDiff.UUID {
@@ -165,6 +182,13 @@ func newLandCmd() *cobra.Command {
 				feature.Status = "complete"
 			}
 			_ = workspace.SaveFeature(*feature)
+
+			// Take snapshot with action: land
+			diffID := fmt.Sprintf("D%d", targetDiff.Position)
+			_, snapErr := takeSnapshot(feature, diffID, "land", fmt.Sprintf("Land %s: %s", diffID, targetDiff.Title))
+			if snapErr != nil {
+				fmt.Println(format.DimText(fmt.Sprintf("  Note: snapshot failed (%s)", snapErr.Error())))
+			}
 
 			// Result
 			fmt.Printf("%s Landed %s: %s\n", format.SuccessMsg("\u2713"), format.DiffLabel(targetDiff.Position), targetDiff.Title)

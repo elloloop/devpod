@@ -23,9 +23,15 @@ const navItems = [
   { href: "#", label: "Settings", icon: Settings },
 ];
 
+/** Pattern: /diffs/<slug>/<position-number> — full-viewport review mode */
+const DIFF_REVIEW_RE = /^\/diffs\/[^/]+\/\d+/;
+
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Hide sidebar completely on diff review pages
+  if (DIFF_REVIEW_RE.test(pathname)) return null;
 
   return (
     <aside

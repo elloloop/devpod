@@ -231,6 +231,14 @@ func ConflictMessage(file string) string {
 func NextStepHint(action string) string {
 	dim := color.HiBlackString
 	switch action {
+	case "clone":
+		return dim("Next: devpod feature \"my feature name\"")
+	case "feature":
+		return dim("Next: make changes, then run: devpod diff")
+	case "diff-create":
+		return dim("Next: devpod submit (push for review) or devpod diff (add another change)")
+	case "diff-update":
+		return dim("Next: devpod submit (push updated diffs for review)")
 	case "diff":
 		return dim("Run \"devpod submit\" to create a pull request, or \"devpod diff\" to add another change.")
 	case "sync":
@@ -241,6 +249,10 @@ func NextStepHint(action string) string {
 		return dim("Waiting for review. Run \"devpod land\" after approval to merge.")
 	case "land":
 		return dim("Change landed. Run \"devpod sync\" to start fresh.")
+	case "switch":
+		return dim("Run \"devpod context\" to see where you are, or \"devpod diff\" to continue.")
+	case "split":
+		return dim("Next: devpod submit (push for review)")
 	default:
 		return ""
 	}

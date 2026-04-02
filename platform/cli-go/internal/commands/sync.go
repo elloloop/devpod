@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/elloloop/devpod/platform/cli-go/internal/format"
 	"github.com/elloloop/devpod/platform/cli-go/internal/git"
 	"github.com/elloloop/devpod/platform/cli-go/internal/workspace"
@@ -60,6 +61,10 @@ func newSyncCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sync",
 		Short: "Sync your work with the latest code",
+		Long: `Rebases your feature branch on top of the latest main branch.
+
+After syncing, a snapshot is taken on the versions branch and both
+branches are pushed to the remote.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if abortSync {
 				if err := git.RebaseAbort(); err != nil {
@@ -70,84 +75,10 @@ func newSyncCmd() *cobra.Command {
 			}
 
 			if continueSync {
-				result := git.RebaseContinue()
-				if !result.Success && len(result.Conflicts) > 0 {
-					fmt.Println(format.ErrorMsg("Still have conflicts:"))
-					for _, file := range result.Conflicts {
-						fmt.Printf("  %s\n", format.ConflictMessage(file))
-					}
-					fmt.Println()
-					fmt.Println(format.DimText("Fix the conflicts, then run: devpod sync --continue"))
-					return fmt.Errorf("conflicts remain")
-				}
-
-				feature := workspace.GetCurrentFeature()
-				if feature != nil {
-					_ = git.PushForce(feature.Branch)
-					updateDiffSHAs(feature)
-				}
-
-				fmt.Printf("%s Synced \u2014 your work is on top of the latest code.\n", format.SuccessMsg("\u2713"))
-				fmt.Println(format.NextStepHint("sync"))
-				return nil
+				return handleSyncContinue()
 			}
 
-			// Normal sync
-			feature := workspace.GetCurrentFeature()
-			if feature == nil {
-				fmt.Println(format.ErrorMsg("No active feature."))
-				fmt.Println(format.DimText("Start one with: devpod feature \"name\""))
-				return fmt.Errorf("no active feature")
-			}
-
-			// Save undo entry
-			headBefore, _ := git.GetHeadSHA()
-			_ = workspace.SaveUndoEntry(workspace.UndoEntry{
-				Action:      "sync",
-				Timestamp:   time.Now().UTC().Format(time.RFC3339),
-				RefBefore:   headBefore,
-				Description: "Sync with latest code",
-				Data:        map[string]interface{}{"branch": feature.Branch},
-			})
-
-			// Auto-save uncommitted changes
-			autoSaveChanges()
-
-			// Fetch and rebase
-			config := workspace.LoadConfig()
-			_ = git.FetchMain()
-
-			result := git.RebaseOnto("origin/" + config.DefaultBranch)
-
-			if !result.Success && len(result.Conflicts) > 0 {
-				fmt.Println(format.ErrorMsg("Conflicts found:"))
-				for _, file := range result.Conflicts {
-					fmt.Printf("  %s\n", format.ConflictMessage(file))
-				}
-				fmt.Println()
-				fmt.Println(format.DimText("Fix the conflicts, then run: devpod sync --continue"))
-				return fmt.Errorf("conflicts found")
-			}
-
-			// Push and update metadata
-			_ = git.PushForce(feature.Branch)
-			updateDiffSHAs(feature)
-
-			// Show result
-			diffs := workspace.LoadDiffsForFeature(*feature)
-			fmt.Printf("%s Synced \u2014 your work is on top of the latest code.\n", format.SuccessMsg("\u2713"))
-
-			if len(diffs) > 0 {
-				sorted := sortDiffsByPosition(diffs)
-				var stackParts []string
-				for _, d := range sorted {
-					stackParts = append(stackParts, fmt.Sprintf("%s %s", format.DiffLabel(d.Position), format.DiffStatusIcon(string(d.Status))))
-				}
-				fmt.Println(format.DimText(fmt.Sprintf("  Stack: %s", strings.Join(stackParts, " \u2192 "))))
-			}
-
-			fmt.Println(format.NextStepHint("sync"))
-			return nil
+			return handleSync()
 		},
 	}
 
@@ -155,4 +86,130 @@ func newSyncCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&abortSync, "abort", false, "Abort sync in progress")
 
 	return cmd
+}
+
+func handleSync() error {
+	// Check for uncommitted changes
+	if workspace.HasUncommittedChanges() {
+		return fmt.Errorf("%s\n\n  Save your changes first with: devpod diff",
+			format.ErrorMsg("You have unsaved changes."))
+	}
+
+	// Check for pending rebase
+	if err := workspace.CheckPendingRebase(); err != nil {
+		return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
+	}
+
+	feature, err := workspace.ValidateOnFeatureBranch()
+	if err != nil {
+		return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
+	}
+
+	// Save undo entry
+	headBefore, _ := git.GetHeadSHA()
+	_ = workspace.SaveUndoEntry(workspace.UndoEntry{
+		Action:      "sync",
+		Timestamp:   time.Now().UTC().Format(time.RFC3339),
+		RefBefore:   headBefore,
+		Description: "Sync with latest code",
+		Data:        map[string]interface{}{"branch": feature.Branch},
+	})
+
+	// Fetch and rebase
+	config := workspace.LoadConfig()
+
+	s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	s.Suffix = " Fetching latest code..."
+	s.Start()
+	_ = git.FetchMain()
+	s.Stop()
+
+	result := git.RebaseOnto("origin/" + config.DefaultBranch)
+
+	if !result.Success && len(result.Conflicts) > 0 {
+		fmt.Println(format.ErrorMsg("Conflicts found while syncing:"))
+		fmt.Println()
+		for _, file := range result.Conflicts {
+			fmt.Printf("  %s\n", format.ConflictMessage(file))
+		}
+		fmt.Println()
+		fmt.Println(format.DimText("Fix the conflicts, then run: devpod sync --continue"))
+		fmt.Println(format.DimText("Or cancel with: devpod sync --abort"))
+		return fmt.Errorf("conflicts found")
+	}
+
+	// Push clean branch and versions branch
+	s = spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+	s.Suffix = " Pushing..."
+	s.Start()
+	_ = git.PushForce(feature.Branch)
+
+	vb := feature.VersionsBranch
+	if vb == "" {
+		vb = workspace.VersionsBranchName(feature.Branch)
+	}
+	if git.BranchExists(vb) {
+		_ = git.PushForce(vb)
+	}
+	s.Stop()
+
+	// Update diff SHAs
+	updateDiffSHAs(feature)
+
+	// Take snapshot with action: sync
+	_, snapErr := takeSnapshot(feature, "", "sync", "Sync with latest main")
+	if snapErr != nil {
+		fmt.Println(format.DimText(fmt.Sprintf("  Note: snapshot failed (%s)", snapErr.Error())))
+	}
+
+	// Show result
+	diffs := workspace.LoadDiffsForFeature(*feature)
+	fmt.Printf("%s Synced -- your work is on top of the latest code.\n", format.SuccessMsg("\u2713"))
+
+	if len(diffs) > 0 {
+		sorted := sortDiffsByPosition(diffs)
+		var stackParts []string
+		for _, d := range sorted {
+			stackParts = append(stackParts, fmt.Sprintf("%s %s", format.DiffLabel(d.Position), format.DiffStatusIcon(string(d.Status))))
+		}
+		fmt.Println(format.DimText(fmt.Sprintf("  Stack: %s", strings.Join(stackParts, " \u2192 "))))
+	}
+
+	fmt.Println(format.NextStepHint("sync"))
+	return nil
+}
+
+func handleSyncContinue() error {
+	result := git.RebaseContinue()
+	if !result.Success && len(result.Conflicts) > 0 {
+		fmt.Println(format.ErrorMsg("Still have conflicts:"))
+		for _, file := range result.Conflicts {
+			fmt.Printf("  %s\n", format.ConflictMessage(file))
+		}
+		fmt.Println()
+		fmt.Println(format.DimText("Fix the conflicts, then run: devpod sync --continue"))
+		return fmt.Errorf("conflicts remain")
+	}
+
+	feature, _ := workspace.ValidateOnFeatureBranch()
+	if feature != nil {
+		// Push both branches
+		_ = git.PushForce(feature.Branch)
+		vb := feature.VersionsBranch
+		if vb == "" {
+			vb = workspace.VersionsBranchName(feature.Branch)
+		}
+		if git.BranchExists(vb) {
+			_ = git.PushForce(vb)
+		}
+
+		updateDiffSHAs(feature)
+
+		// Take snapshot
+		_, _ = takeSnapshot(feature, "", "sync", "Sync with latest main (continued)")
+	}
+
+	fmt.Printf("%s Synced -- your work is on top of the latest code.\n", format.SuccessMsg("\u2713"))
+	fmt.Println(format.NextStepHint("sync"))
+	return nil
 }

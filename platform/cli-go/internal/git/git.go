@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -204,10 +205,71 @@ func DeleteBranch(name string, cwd ...string) error {
 	return err
 }
 
-// BranchExists checks if a branch exists.
+// BranchExists checks if a branch exists locally.
 func BranchExists(name string, cwd ...string) bool {
 	_, err := Run(fmt.Sprintf("rev-parse --verify %s", name), cwd...)
 	return err == nil
+}
+
+// BranchExistsRemote checks if a branch exists on origin.
+func BranchExistsRemote(name string, cwd ...string) bool {
+	_, err := Run(fmt.Sprintf("ls-remote --heads origin %s", name), cwd...)
+	if err != nil {
+		return false
+	}
+	output, _ := Run(fmt.Sprintf("ls-remote --heads origin %s", name), cwd...)
+	return strings.TrimSpace(output) != ""
+}
+
+// CreateOrphanBranch creates a new branch with no parents, seeded from fromRef.
+// This is used to create the versions branch.
+func CreateOrphanBranch(name, fromRef string, cwd ...string) error {
+	dir := resolveCwd(cwd...)
+
+	// Create a temp dir for the worktree
+	tmpBase, err := os.MkdirTemp("", "devpod-orphan-*")
+	if err != nil {
+		return fmt.Errorf("could not create temporary directory: %w", err)
+	}
+	defer os.RemoveAll(tmpBase)
+
+	// Remove it so git worktree add can create it
+	os.Remove(tmpBase)
+
+	// Create a detached worktree from the source ref
+	cmd := exec.Command("git", "worktree", "add", "--detach", tmpBase, fromRef)
+	cmd.Dir = dir
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("could not create worktree for orphan branch: %s", strings.TrimSpace(string(out)))
+	}
+	defer func() {
+		rmCmd := exec.Command("git", "worktree", "remove", "--force", tmpBase)
+		rmCmd.Dir = dir
+		_ = rmCmd.Run()
+	}()
+
+	// Inside the worktree, create the orphan branch
+	cmd = exec.Command("git", "checkout", "--orphan", name)
+	cmd.Dir = tmpBase
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("could not create orphan branch: %s", strings.TrimSpace(string(out)))
+	}
+
+	// Stage all files
+	cmd = exec.Command("git", "add", "-A")
+	cmd.Dir = tmpBase
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("could not stage files for orphan branch: %s", strings.TrimSpace(string(out)))
+	}
+
+	// Commit
+	cmd = exec.Command("git", "commit", "-m", "Initialize versions branch")
+	cmd.Dir = tmpBase
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("could not create initial commit on orphan branch: %s", strings.TrimSpace(string(out)))
+	}
+
+	return nil
 }
 
 // ---------------------------------------------------------------------------
@@ -311,19 +373,40 @@ func StageAll(cwd ...string) error {
 
 // Commit creates a commit and returns the SHA.
 func Commit(message string, cwd ...string) (string, error) {
-	_, err := runRaw(fmt.Sprintf("commit -m %q", message), cwd...)
+	dir := resolveCwd(cwd...)
+	cmd := exec.Command("git", "commit", "-m", message)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	_ = out
 	if err != nil {
-		return "", err
+		var stderr string
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			stderr = strings.TrimSpace(string(exitErr.Stderr))
+		}
+		if stderr == "" {
+			stderr = err.Error()
+		}
+		return "", fmt.Errorf("%s", translateError(stderr))
 	}
 	return GetHeadSHA(cwd...)
 }
 
 // Amend amends HEAD commit, returns new SHA.
 func Amend(message string, cwd ...string) (string, error) {
+	dir := resolveCwd(cwd...)
 	if message != "" {
-		_, err := runRaw(fmt.Sprintf("commit --amend -m %q", message), cwd...)
+		cmd := exec.Command("git", "commit", "--amend", "-m", message)
+		cmd.Dir = dir
+		_, err := cmd.Output()
 		if err != nil {
-			return "", err
+			var stderr string
+			if exitErr, ok := err.(*exec.ExitError); ok {
+				stderr = strings.TrimSpace(string(exitErr.Stderr))
+			}
+			if stderr == "" {
+				stderr = err.Error()
+			}
+			return "", fmt.Errorf("%s", translateError(stderr))
 		}
 	} else {
 		_, err := Run("commit --amend --no-edit", cwd...)
@@ -414,6 +497,198 @@ func extractConflictFiles(cwd ...string) []string {
 }
 
 // ---------------------------------------------------------------------------
+// Cherry-pick operations (for stack replay)
+// ---------------------------------------------------------------------------
+
+// CherryPickNoCommit applies a commit's changes without committing (for conflict detection).
+func CherryPickNoCommit(sha string, cwd ...string) error {
+	_, err := Run(fmt.Sprintf("cherry-pick --no-commit %s", sha), cwd...)
+	return err
+}
+
+// CherryPickAbort aborts a cherry-pick in progress.
+func CherryPickAbort(cwd ...string) error {
+	_, err := Run("cherry-pick --abort", cwd...)
+	return err
+}
+
+// CherryPickContinue continues a cherry-pick after conflict resolution.
+func CherryPickContinue(cwd ...string) error {
+	_, err := Run("-c core.editor=true cherry-pick --continue", cwd...)
+	return err
+}
+
+// CherryPick performs a full cherry-pick (with commit).
+func CherryPick(sha string, cwd ...string) error {
+	_, err := Run(fmt.Sprintf("cherry-pick %s", sha), cwd...)
+	return err
+}
+
+// HasConflicts returns true if there are unmerged files.
+func HasConflicts(cwd ...string) bool {
+	files := extractConflictFiles(cwd...)
+	return len(files) > 0
+}
+
+// GetConflictFiles returns the list of conflicting files.
+func GetConflictFiles(cwd ...string) []string {
+	return extractConflictFiles(cwd...)
+}
+
+// ---------------------------------------------------------------------------
+// Stash operations (for auto-saving uncommitted changes)
+// ---------------------------------------------------------------------------
+
+// StashSave stashes uncommitted changes. Returns true if a stash was created.
+func StashSave(message string, cwd ...string) (bool, error) {
+	if IsClean(cwd...) {
+		return false, nil
+	}
+	_, err := runRaw(fmt.Sprintf("stash push -m %q", message), cwd...)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// StashPop pops the most recent stash.
+func StashPop(cwd ...string) error {
+	_, err := Run("stash pop", cwd...)
+	return err
+}
+
+// ---------------------------------------------------------------------------
+// Worktree operations (for snapshots without branch switching)
+// ---------------------------------------------------------------------------
+
+// WorktreeAdd creates a new worktree at the given path, checked out to the given branch.
+func WorktreeAdd(path, branch string, cwd ...string) error {
+	dir := resolveCwd(cwd...)
+	cmd := exec.Command("git", "worktree", "add", path, branch)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s", translateError(strings.TrimSpace(string(out))))
+	}
+	return nil
+}
+
+// WorktreeRemove removes a worktree.
+func WorktreeRemove(path string, cwd ...string) error {
+	dir := resolveCwd(cwd...)
+	cmd := exec.Command("git", "worktree", "remove", "--force", path)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s", translateError(strings.TrimSpace(string(out))))
+	}
+	return nil
+}
+
+// WorktreeList returns the paths of all worktrees.
+func WorktreeList(cwd ...string) ([]string, error) {
+	output, err := Run("worktree list --porcelain", cwd...)
+	if err != nil {
+		return nil, err
+	}
+	var paths []string
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(line, "worktree ") {
+			paths = append(paths, strings.TrimPrefix(line, "worktree "))
+		}
+	}
+	return paths, nil
+}
+
+// CleanupStaleWorktrees removes any devpod snapshot worktrees that were left behind.
+func CleanupStaleWorktrees(cwd ...string) {
+	// Prune dead worktrees first
+	_, _ = Run("worktree prune", cwd...)
+
+	paths, err := WorktreeList(cwd...)
+	if err != nil {
+		return
+	}
+	for _, p := range paths {
+		base := filepath.Base(p)
+		if strings.HasPrefix(base, "devpod-snapshot-") || strings.HasPrefix(base, "devpod-orphan-") {
+			// This is a stale devpod worktree
+			_ = WorktreeRemove(p, cwd...)
+		}
+	}
+}
+
+// SnapshotToVersionsBranch copies the full tree from cleanBranch to versionsBranch
+// using a worktree. Returns the new commit SHA.
+func SnapshotToVersionsBranch(cleanBranch, versionsBranch, message string, cwd ...string) (string, error) {
+	dir := resolveCwd(cwd...)
+
+	// Create temp dir for worktree
+	tmpDir, err := os.MkdirTemp("", "devpod-snapshot-*")
+	if err != nil {
+		return "", fmt.Errorf("could not create temporary directory for snapshot: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Remove tmp dir so git worktree add can create it
+	os.Remove(tmpDir)
+
+	// Add worktree for the versions branch
+	err = WorktreeAdd(tmpDir, versionsBranch, dir)
+	if err != nil {
+		return "", fmt.Errorf("could not open versions branch for snapshot.\n\n  Try: devpod sync")
+	}
+	defer func() {
+		WorktreeRemove(tmpDir, dir)
+	}()
+
+	// Nuclear clean: remove everything in the worktree except .git
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("could not read snapshot directory: %w", err)
+	}
+	for _, e := range entries {
+		if e.Name() == ".git" {
+			continue
+		}
+		os.RemoveAll(filepath.Join(tmpDir, e.Name()))
+	}
+
+	// Also do a git rm -rf . to ensure git index is clean
+	_, _ = runRaw("rm -rf .", tmpDir)
+
+	// Copy full tree from clean branch
+	_, err = Run(fmt.Sprintf("checkout %s -- .", cleanBranch), tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("could not copy files from working branch to snapshot.\n\n  Ensure your branch is in a good state.")
+	}
+
+	// Stage everything
+	err = StageAll(tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("could not stage snapshot files: %w", err)
+	}
+
+	// Check if there are changes to commit
+	if IsClean(tmpDir) {
+		// No changes — get current HEAD of versions branch
+		sha, err := GetHeadSHA(tmpDir)
+		if err != nil {
+			return "", err
+		}
+		return sha, nil
+	}
+
+	// Commit
+	sha, err := Commit(message, tmpDir)
+	if err != nil {
+		return "", fmt.Errorf("could not save snapshot: %w", err)
+	}
+
+	return sha, nil
+}
+
+// ---------------------------------------------------------------------------
 // History
 // ---------------------------------------------------------------------------
 
@@ -497,13 +772,18 @@ func GetHeadSHA(cwd ...string) (string, error) {
 	return Run("rev-parse HEAD", cwd...)
 }
 
+// GetRefSHA returns the SHA for any ref.
+func GetRefSHA(ref string, cwd ...string) (string, error) {
+	return Run(fmt.Sprintf("rev-parse %s", ref), cwd...)
+}
+
 // GetReflogEntry returns the SHA from the reflog at position n.
 func GetReflogEntry(n int, cwd ...string) (string, error) {
 	return runRaw(fmt.Sprintf("reflog show HEAD@{%d} --format=%%H", n), cwd...)
 }
 
 // ---------------------------------------------------------------------------
-// Worktree
+// Worktree info
 // ---------------------------------------------------------------------------
 
 // IsInsideWorktree returns true if cwd is inside a git work tree.
@@ -524,10 +804,32 @@ func IsGitRepo(cwd ...string) bool {
 
 // Trailers represents key-value metadata in a commit message.
 type Trailers struct {
-	Diff    string // "D1", "D2", etc.
-	Feature string // feature slug
-	Type    string // "feature", "fix", "docs", "chore"
-	Version string // diff version number
+	Snapshot      string // S1, S2, etc.
+	Diff          string // D1, D2, etc.
+	Version       string // version number
+	Feature       string // feature slug
+	Action        string // create, update, sync, land, undo
+	Stack         string // D1v2,D2v1,D3v1
+	Previous      string // previous snapshot ID for this diff
+	CleanSHA      string // commit SHA on clean branch (ephemeral)
+	Reverts       string // SHA being reverted (for undo)
+	ParentVersion string // previous version's snapshot SHA
+	Type          string // "feature", "fix", "docs", "chore"
+}
+
+// trailerKeys lists all recognized devpod trailer keys.
+var trailerKeys = map[string]bool{
+	"Snapshot":      true,
+	"Diff":          true,
+	"Version":       true,
+	"Feature":       true,
+	"Action":        true,
+	"Stack":         true,
+	"Previous":      true,
+	"CleanSHA":      true,
+	"Reverts":       true,
+	"ParentVersion": true,
+	"Type":          true,
 }
 
 // ParseTrailers extracts devpod trailers from a commit message.
@@ -537,6 +839,8 @@ func ParseTrailers(message string) Trailers {
 		line = strings.TrimSpace(line)
 		if k, v, ok := parseTrailerLine(line); ok {
 			switch k {
+			case "Snapshot":
+				t.Snapshot = v
 			case "Diff":
 				t.Diff = v
 			case "Feature":
@@ -545,6 +849,18 @@ func ParseTrailers(message string) Trailers {
 				t.Type = v
 			case "Version":
 				t.Version = v
+			case "Action":
+				t.Action = v
+			case "Stack":
+				t.Stack = v
+			case "Previous":
+				t.Previous = v
+			case "CleanSHA":
+				t.CleanSHA = v
+			case "Reverts":
+				t.Reverts = v
+			case "ParentVersion":
+				t.ParentVersion = v
 			}
 		}
 	}
@@ -563,17 +879,38 @@ func GetCommitTrailers(sha string, cwd ...string) (Trailers, error) {
 // FormatTrailers returns trailer lines to append to a commit message.
 func FormatTrailers(t Trailers) string {
 	var lines []string
+	if t.Snapshot != "" {
+		lines = append(lines, "Snapshot: "+t.Snapshot)
+	}
 	if t.Diff != "" {
 		lines = append(lines, "Diff: "+t.Diff)
+	}
+	if t.Version != "" {
+		lines = append(lines, "Version: "+t.Version)
 	}
 	if t.Feature != "" {
 		lines = append(lines, "Feature: "+t.Feature)
 	}
+	if t.Action != "" {
+		lines = append(lines, "Action: "+t.Action)
+	}
+	if t.Stack != "" {
+		lines = append(lines, "Stack: "+t.Stack)
+	}
+	if t.Previous != "" {
+		lines = append(lines, "Previous: "+t.Previous)
+	}
+	if t.CleanSHA != "" {
+		lines = append(lines, "CleanSHA: "+t.CleanSHA)
+	}
+	if t.Reverts != "" {
+		lines = append(lines, "Reverts: "+t.Reverts)
+	}
+	if t.ParentVersion != "" {
+		lines = append(lines, "ParentVersion: "+t.ParentVersion)
+	}
 	if t.Type != "" {
 		lines = append(lines, "Type: "+t.Type)
-	}
-	if t.Version != "" {
-		lines = append(lines, "Version: "+t.Version)
 	}
 	if len(lines) == 0 {
 		return ""
@@ -599,8 +936,7 @@ func StripTrailers(message string) string {
 	for _, line := range strings.Split(message, "\n") {
 		trimmed := strings.TrimSpace(line)
 		if k, _, ok := parseTrailerLine(trimmed); ok {
-			switch k {
-			case "Diff", "Feature", "Type", "Version":
+			if trailerKeys[k] {
 				continue // skip devpod trailers
 			}
 		}

@@ -127,3 +127,28 @@ export interface DiffDetail extends StackedDiff {
   diff: string;
   detailedFiles: DiffFile[];
 }
+
+// ─── Version History / Interdiff ───────────────────────────
+
+export interface DiffVersionInfo {
+  snapshotId: string;
+  snapshotSha: string;
+  version: number;
+  action: string;
+  message: string;
+  date: string;
+  stack: string;
+}
+
+export interface CompareRequest {
+  left: string;
+  right: string;
+  files?: string[];
+}
+
+export interface CompareResult {
+  diff: string;
+  files: DiffFile[];
+  leftLabel: string;
+  rightLabel: string;
+}

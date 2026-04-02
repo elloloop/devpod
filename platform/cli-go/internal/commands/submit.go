@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/elloloop/devpod/platform/cli-go/internal/api"
 	"github.com/elloloop/devpod/platform/cli-go/internal/format"
 	"github.com/elloloop/devpod/platform/cli-go/internal/git"
@@ -28,13 +29,18 @@ func newSubmitCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "submit",
-		Short: "Submit diffs for review",
+		Short: "Push diffs for review and create/update a GitHub PR",
+		Long: `Pushes the clean branch and versions branch to origin, then
+creates or updates a GitHub pull request.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			feature := workspace.GetCurrentFeature()
-			if feature == nil {
-				fmt.Println(format.ErrorMsg("No active feature."))
-				fmt.Println(format.DimText("Start one with: devpod feature \"name\""))
-				return fmt.Errorf("no active feature")
+			// Check for pending rebase
+			if err := workspace.CheckPendingRebase(); err != nil {
+				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
+			}
+
+			feature, err := workspace.ValidateOnFeatureBranch()
+			if err != nil {
+				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
 			}
 
 			diffs := workspace.LoadDiffsForFeature(*feature)
@@ -87,8 +93,22 @@ func newSubmitCmd() *cobra.Command {
 				},
 			})
 
-			// Push the feature branch
+			s := spinner.New(spinner.CharSets[14], 100*time.Millisecond)
+			s.Suffix = " Pushing branches..."
+			s.Start()
+
+			// Push the clean branch
 			_ = git.PushForce(feature.Branch)
+
+			// Push the versions branch
+			vb := feature.VersionsBranch
+			if vb == "" {
+				vb = workspace.VersionsBranchName(feature.Branch)
+			}
+			if git.BranchExists(vb) {
+				_ = git.PushForce(vb)
+			}
+			s.Stop()
 
 			config := workspace.LoadConfig()
 
@@ -108,7 +128,11 @@ func newSubmitCmd() *cobra.Command {
 
 				var diffListParts []string
 				for _, d := range diffs {
-					diffListParts = append(diffListParts, fmt.Sprintf("- %s: %s", format.DiffLabel(d.Position), d.Title))
+					vLabel := ""
+					if d.Version > 1 {
+						vLabel = fmt.Sprintf(" v%d", d.Version)
+					}
+					diffListParts = append(diffListParts, fmt.Sprintf("- %s%s: %s", format.DiffLabel(d.Position), vLabel, d.Title))
 				}
 				body := "## Diffs\n\n" + strings.Join(diffListParts, "\n")
 

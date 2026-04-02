@@ -48,7 +48,68 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ─── Design System Tokens ─── */
+
 :root {
+  /* Backgrounds */
+  --dp-bg-primary: #0a0a0b;
+  --dp-bg-secondary: #111113;
+  --dp-bg-tertiary: #18181b;
+  --dp-bg-hover: #1c1c1f;
+  --dp-bg-active: #222225;
+
+  /* Borders */
+  --dp-border-default: #27272a;
+  --dp-border-subtle: #1e1e21;
+  --dp-border-emphasis: #3f3f46;
+
+  /* Text */
+  --dp-text-primary: #e4e4e7;
+  --dp-text-secondary: #a1a1aa;
+  --dp-text-tertiary: #71717a;
+  --dp-text-inverse: #0a0a0b;
+
+  /* Accent */
+  --dp-accent-primary: #6366f1;
+  --dp-accent-success: #22c55e;
+  --dp-accent-warning: #f59e0b;
+  --dp-accent-error: #ef4444;
+  --dp-accent-info: #3b82f6;
+
+  /* Diff */
+  --dp-diff-add-bg: #0a2e1a;
+  --dp-diff-add-bg-emphasis: #0d3b21;
+  --dp-diff-add-gutter: #133929;
+  --dp-diff-del-bg: #2a0f0f;
+  --dp-diff-del-bg-emphasis: #3b1414;
+  --dp-diff-del-gutter: #3d1818;
+  --dp-diff-hunk-bg: #0d1530;
+  --dp-diff-hunk-text: #6699cc;
+  --dp-diff-gutter-bg: #0f0f11;
+  --dp-diff-gutter-text: #3f3f46;
+  --dp-diff-gutter-border: #1e1e21;
+
+  /* Typography */
+  --dp-font-sans: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --dp-font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, monospace;
+  --dp-font-xs: 11px;
+  --dp-font-sm: 12px;
+  --dp-font-base: 13px;
+  --dp-font-lg: 14px;
+  --dp-font-xl: 16px;
+  --dp-font-2xl: 20px;
+
+  /* Radius */
+  --dp-radius-sm: 3px;
+  --dp-radius-md: 5px;
+  --dp-radius-lg: 8px;
+
+  /* Line height */
+  --dp-lh-code: 20px;
+  --dp-lh-ui: 28px;
+  --dp-lh-compact: 24px;
+
+  /* Shadcn overrides — light mode (not used, just fallback) */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -72,7 +133,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0.3125rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -84,37 +145,37 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0a0a0b;
+  --foreground: #e4e4e7;
+  --card: #111113;
+  --card-foreground: #e4e4e7;
+  --popover: #111113;
+  --popover-foreground: #e4e4e7;
+  --primary: #6366f1;
+  --primary-foreground: #e4e4e7;
+  --secondary: #18181b;
+  --secondary-foreground: #e4e4e7;
+  --muted: #18181b;
+  --muted-foreground: #71717a;
+  --accent: #1c1c1f;
+  --accent-foreground: #e4e4e7;
+  --destructive: #ef4444;
+  --border: #27272a;
+  --input: #27272a;
+  --ring: #6366f1;
+  --chart-1: #6366f1;
+  --chart-2: #22c55e;
+  --chart-3: #f59e0b;
+  --chart-4: #ef4444;
+  --chart-5: #3b82f6;
+  --sidebar: #0f0f11;
+  --sidebar-foreground: #e4e4e7;
+  --sidebar-primary: #6366f1;
+  --sidebar-primary-foreground: #e4e4e7;
+  --sidebar-accent: #1c1c1f;
+  --sidebar-accent-foreground: #e4e4e7;
+  --sidebar-border: #1e1e21;
+  --sidebar-ring: #6366f1;
 }
 
 @layer base {
@@ -123,8 +184,25 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--dp-font-sans);
+    font-size: var(--dp-font-base);
   }
   html {
     @apply font-sans;
+  }
+  /* Tight scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--dp-border-default);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--dp-border-emphasis);
   }
 }
