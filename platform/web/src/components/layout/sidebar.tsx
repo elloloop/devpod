@@ -27,6 +27,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
+  // Hide sidebar completely on diff review pages
+  if (/^\/diffs\/[^/]+\/\d+/.test(pathname)) {
+    return null;
+  }
+
   return (
     <aside
       className={cn(
