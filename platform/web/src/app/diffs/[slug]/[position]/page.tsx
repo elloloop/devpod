@@ -1,224 +1,62 @@
 "use client";
 
-import { use, useEffect, useCallback, useMemo, useState } from "react";
+import { use, useEffect, useCallback, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useFeaturesDiffs } from "@/lib/hooks/use-diffs";
+import dynamic from "next/dynamic";
 import type { DiffFile } from "@/lib/types";
 
-// ────────────────────────────────────────────────────────────
-// Unified diff parser — extracts line numbers and line types
-// ────────────────────────────────────────────────────────────
+// Monaco loaded client-side only (it's heavy)
+const DiffEditor = dynamic(
+  () => import("@monaco-editor/react").then((m) => m.DiffEditor),
+  { ssr: false }
+);
 
-interface DiffLine {
-  type: "add" | "del" | "context" | "hunk" | "meta";
-  content: string;
-  oldNum: number | null;
-  newNum: number | null;
-}
+const Editor = dynamic(
+  () => import("@monaco-editor/react").then((m) => m.default),
+  { ssr: false }
+);
 
-function parseDiff(raw: string): DiffLine[] {
-  const lines: DiffLine[] = [];
-  let oldNum = 0;
-  let newNum = 0;
-
-  for (const line of raw.split("\n")) {
-    if (
-      line.startsWith("diff --git") ||
-      line.startsWith("index ") ||
-      line.startsWith("new file") ||
-      line.startsWith("deleted file") ||
-      line.startsWith("--- ") ||
-      line.startsWith("+++ ")
-    ) {
-      continue; // skip meta headers
-    }
-
-    if (line.startsWith("@@")) {
-      // Parse hunk header: @@ -oldStart,oldLen +newStart,newLen @@
-      const match = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
-      if (match) {
-        oldNum = parseInt(match[1], 10);
-        newNum = parseInt(match[2], 10);
-      }
-      lines.push({ type: "hunk", content: line, oldNum: null, newNum: null });
-      continue;
-    }
-
-    if (line.startsWith("+")) {
-      lines.push({ type: "add", content: line.slice(1), oldNum: null, newNum: newNum++ });
-    } else if (line.startsWith("-")) {
-      lines.push({ type: "del", content: line.slice(1), oldNum: oldNum++, newNum: null });
-    } else if (line.startsWith(" ")) {
-      lines.push({ type: "context", content: line.slice(1), oldNum: oldNum++, newNum: newNum++ });
-    } else if (line === "") {
-      // empty line in context
-      lines.push({ type: "context", content: "", oldNum: oldNum++, newNum: newNum++ });
-    }
-  }
-
-  return lines;
-}
-
-// ────────────────────────────────────────────────────────────
-// Basic syntax highlighting — tokens for common languages
-// ────────────────────────────────────────────────────────────
-
-const KEYWORDS = new Set([
-  "import", "export", "from", "const", "let", "var", "function", "return",
-  "if", "else", "for", "while", "class", "interface", "type", "extends",
-  "async", "await", "new", "this", "true", "false", "null", "undefined",
-  "default", "switch", "case", "break", "continue", "throw", "try", "catch",
-  "finally", "typeof", "instanceof", "in", "of", "void", "delete", "yield",
-]);
-
-function highlightLine(text: string): React.ReactNode[] {
-  const tokens: React.ReactNode[] = [];
-  let i = 0;
-
-  while (i < text.length) {
-    // String literals
-    if (text[i] === '"' || text[i] === "'" || text[i] === "`") {
-      const quote = text[i];
-      let j = i + 1;
-      while (j < text.length && text[j] !== quote) {
-        if (text[j] === "\\") j++; // skip escaped
-        j++;
-      }
-      j++; // include closing quote
-      tokens.push(
-        <span key={i} style={{ color: "#a5d6a7" }}>
-          {text.slice(i, j)}
-        </span>
-      );
-      i = j;
-      continue;
-    }
-
-    // Line comments
-    if (text[i] === "/" && text[i + 1] === "/") {
-      tokens.push(
-        <span key={i} style={{ color: "#616161" }}>
-          {text.slice(i)}
-        </span>
-      );
-      break;
-    }
-
-    // Numbers
-    if (/\d/.test(text[i]) && (i === 0 || /\W/.test(text[i - 1]))) {
-      let j = i;
-      while (j < text.length && /[\d.]/.test(text[j])) j++;
-      tokens.push(
-        <span key={i} style={{ color: "#f48fb1" }}>
-          {text.slice(i, j)}
-        </span>
-      );
-      i = j;
-      continue;
-    }
-
-    // Words (keywords, identifiers)
-    if (/[a-zA-Z_$]/.test(text[i])) {
-      let j = i;
-      while (j < text.length && /[a-zA-Z0-9_$]/.test(text[j])) j++;
-      const word = text.slice(i, j);
-      if (KEYWORDS.has(word)) {
-        tokens.push(
-          <span key={i} style={{ color: "#82b1ff" }}>
-            {word}
-          </span>
-        );
-      } else {
-        tokens.push(<span key={i}>{word}</span>);
-      }
-      i = j;
-      continue;
-    }
-
-    // Operators and punctuation
-    tokens.push(<span key={i}>{text[i]}</span>);
-    i++;
-  }
-
-  return tokens;
-}
-
-// ────────────────────────────────────────────────────────────
-// Themes
-// ────────────────────────────────────────────────────────────
-
-type ThemeName = "vscode" | "github";
-
-const themes: Record<ThemeName, typeof VSCODE_THEME> = {
-  vscode: {
-    bg: "#1e1e1e",
-    bgSidebar: "#252526",
-    bgHeader: "#2d2d2d",
-    bgHunk: "#1a1a2e",
-    bgAdd: "#1e3a2a",
-    bgDel: "#3a1e1e",
-    bgAddGutter: "#264f38",
-    bgDelGutter: "#4f2626",
-    bgGutter: "#1e1e1e",
-    borderGutter: "#333333",
-    border: "#333333",
-    textPrimary: "#d4d4d4",
-    textSecondary: "#858585",
-    textGutter: "#4e4e4e",
-    textGutterAdd: "#4e8a5e",
-    textGutterDel: "#8a4e4e",
-    textHunk: "#569cd6",
-    textAdd: "#b5cea8",
-    textDel: "#ce9178",
-    textAccent: "#569cd6",
-    textSuccess: "#4ec9b0",
-    textError: "#f44747",
-    font: "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, monospace",
-    fontSize: "13px",
-    lineHeight: "20px",
-  },
-  github: {
-    bg: "#0d1117",
-    bgSidebar: "#161b22",
-    bgHeader: "#161b22",
-    bgHunk: "#1c2233",
-    bgAdd: "#12261e",
-    bgDel: "#2d1215",
-    bgAddGutter: "#1a4028",
-    bgDelGutter: "#421c1f",
-    bgGutter: "#0d1117",
-    borderGutter: "#21262d",
-    border: "#21262d",
-    textPrimary: "#e6edf3",
-    textSecondary: "#8b949e",
-    textGutter: "#3b4252",
-    textGutterAdd: "#2ea04f",
-    textGutterDel: "#da3633",
-    textHunk: "#79c0ff",
-    textAdd: "#aff5b4",
-    textDel: "#ffa8a8",
-    textAccent: "#58a6ff",
-    textSuccess: "#3fb950",
-    textError: "#f85149",
-    font: "'SF Mono', 'Fira Code', Menlo, Consolas, monospace",
-    fontSize: "12px",
-    lineHeight: "20px",
-  },
-};
-
-const VSCODE_THEME = themes.vscode;
-
-// ────────────────────────────────────────────────────────────
-// Component
-// ────────────────────────────────────────────────────────────
+// ── API ──
 
 async function fetchDiff(slug: string, position: number) {
   const res = await fetch(`/api/diffs/${slug}/${position}`);
   if (!res.ok) return null;
   return res.json();
 }
+
+async function fetchFileContent(sha: string, path: string): Promise<string> {
+  try {
+    const res = await fetch(`/api/git/file?sha=${sha}&path=${encodeURIComponent(path)}`);
+    if (!res.ok) return "";
+    const data = await res.json();
+    return data.content || data || "";
+  } catch {
+    return "";
+  }
+}
+
+// ── Language detection ──
+
+function getLanguage(path: string): string {
+  const ext = path.split(".").pop()?.toLowerCase() || "";
+  const map: Record<string, string> = {
+    ts: "typescript", tsx: "typescript", js: "javascript", jsx: "javascript",
+    py: "python", go: "go", rs: "rust", rb: "ruby", java: "java",
+    kt: "kotlin", swift: "swift", dart: "dart", cs: "csharp",
+    cpp: "cpp", c: "c", h: "c", hpp: "cpp",
+    json: "json", yaml: "yaml", yml: "yaml", toml: "toml",
+    md: "markdown", html: "html", css: "css", scss: "scss",
+    sql: "sql", sh: "shell", bash: "shell", zsh: "shell",
+    dockerfile: "dockerfile", graphql: "graphql", proto: "protobuf",
+    xml: "xml", svg: "xml",
+  };
+  return map[ext] || "plaintext";
+}
+
+// ── Component ──
 
 export default function DiffReviewPage({
   params,
@@ -232,15 +70,34 @@ export default function DiffReviewPage({
   const parentFeature = allFeatures?.find((f) => f.feature.slug === slug);
   const siblingDiffs = parentFeature?.diffs ?? [];
 
-  const [themeName, setThemeName] = useState<ThemeName>("vscode");
-  const S = themes[themeName];
-
   const { data: diff, isLoading } = useQuery({
     queryKey: ["diff-detail", slug, posNum],
     queryFn: () => fetchDiff(slug, posNum),
   });
 
-  // Keyboard: n/p for stack navigation
+  const files: DiffFile[] = useMemo(() => diff?.detailedFiles ?? diff?.files ?? [], [diff]);
+  const [activeFileIdx, setActiveFileIdx] = useState(0);
+  const activeFile = files[activeFileIdx];
+
+  // Fetch original and modified file content for Monaco DiffEditor
+  const parentSha = diff?.commit ? `${diff.commit}~1` : "";
+  const currentSha = diff?.commit || "";
+
+  const { data: originalContent } = useQuery({
+    queryKey: ["file-content", parentSha, activeFile?.path],
+    queryFn: () => fetchFileContent(parentSha, activeFile?.path || ""),
+    enabled: !!parentSha && !!activeFile?.path,
+  });
+
+  const { data: modifiedContent } = useQuery({
+    queryKey: ["file-content", currentSha, activeFile?.path],
+    queryFn: () => fetchFileContent(currentSha, activeFile?.path || ""),
+    enabled: !!currentSha && !!activeFile?.path,
+  });
+
+  const [viewMode, setViewMode] = useState<"side-by-side" | "inline">("inline");
+
+  // Keyboard: n/p for stack, j/k for files
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -248,9 +105,13 @@ export default function DiffReviewPage({
         if (siblingDiffs.find((d) => d.position === posNum + 1)) router.push(`/diffs/${slug}/${posNum + 1}`);
       } else if (e.key === "p" && posNum > 1) {
         if (siblingDiffs.find((d) => d.position === posNum - 1)) router.push(`/diffs/${slug}/${posNum - 1}`);
+      } else if (e.key === "j") {
+        setActiveFileIdx((i) => Math.min(i + 1, files.length - 1));
+      } else if (e.key === "k") {
+        setActiveFileIdx((i) => Math.max(i - 1, 0));
       }
     },
-    [posNum, siblingDiffs, slug, router]
+    [posNum, siblingDiffs, slug, router, files.length]
   );
 
   useEffect(() => {
@@ -258,13 +119,14 @@ export default function DiffReviewPage({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
-  const files: DiffFile[] = useMemo(() => diff?.detailedFiles ?? diff?.files ?? [], [diff]);
-
   // ── Loading ──
   if (isLoading) {
     return (
-      <div style={{ background: S.bg, color: S.textSecondary, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: S.font, fontSize: "12px" }}>
-        Loading...
+      <div style={{ background: "#1e1e1e", color: "#666", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 20, height: 20, border: "2px solid #333", borderTopColor: "#888", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
       </div>
     );
   }
@@ -272,74 +134,70 @@ export default function DiffReviewPage({
   // ── Not found ──
   if (!diff) {
     return (
-      <div style={{ background: S.bg, color: S.textSecondary, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: S.font, fontSize: "13px" }}>
+      <div style={{ background: "#1e1e1e", color: "#888", height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "system-ui", fontSize: 14 }}>
         <div style={{ textAlign: "center" }}>
-          <div>D{position} not found in {slug}</div>
-          <Link href={`/diffs/${slug}`} style={{ color: S.textAccent, marginTop: 12, display: "inline-block", fontSize: "12px" }}>
-            ← Back
-          </Link>
+          <div style={{ marginBottom: 16 }}>D{position} not found in {slug}</div>
+          <Link href={`/diffs/${slug}`} style={{ color: "#569cd6" }}>← Back</Link>
         </div>
       </div>
     );
   }
 
-  return (
-    <div style={{ background: S.bg, color: S.textPrimary, height: "100vh", display: "flex", flexDirection: "column", fontFamily: S.font }}>
+  const lang = activeFile ? getLanguage(activeFile.path) : "plaintext";
 
-      {/* ── Top bar ── */}
-      <div style={{ height: 36, display: "flex", alignItems: "center", padding: "0 12px", gap: 8, borderBottom: `1px solid ${S.border}`, background: S.bgHeader, fontSize: "12px", flexShrink: 0 }}>
-        <Link href={`/diffs/${slug}`} style={{ color: S.textSecondary, textDecoration: "none", display: "flex", alignItems: "center", gap: 4 }}>
+  return (
+    <div style={{ background: "#1e1e1e", color: "#d4d4d4", height: "100vh", display: "flex", flexDirection: "column" }}>
+
+      {/* ── Header bar (36px) ── */}
+      <div style={{
+        height: 36, display: "flex", alignItems: "center", padding: "0 12px", gap: 8,
+        borderBottom: "1px solid #2d2d2d", background: "#252526",
+        fontSize: 12, fontFamily: "'Segoe UI', system-ui, sans-serif", flexShrink: 0,
+      }}>
+        <Link href={`/diffs/${slug}`} style={{ color: "#858585", textDecoration: "none" }}>
           ← {parentFeature?.feature.name || slug}
         </Link>
-        <span style={{ color: "#555" }}>·</span>
-        <span style={{ color: S.textAccent, fontWeight: 700 }}>D{diff.position}</span>
-        <span style={{ color: "#555" }}>·</span>
-        <span style={{ color: S.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{diff.title}</span>
-        <span style={{ color: S.textSuccess }}>+{diff.additions}</span>
-        {diff.deletions > 0 && <span style={{ color: S.textError }}>-{diff.deletions}</span>}
-        <span style={{ color: "#555" }}>·</span>
-        <span style={{ color: S.textSecondary }}>{files.length} {files.length === 1 ? "file" : "files"}</span>
-        <span style={{ color: "#555" }}>·</span>
-        <span style={{ color: diff.status === "approved" || diff.status === "landed" ? S.textSuccess : diff.status === "submitted" ? S.textAccent : S.textSecondary }}>
+        <span style={{ color: "#444" }}>·</span>
+        <span style={{ color: "#569cd6", fontWeight: 700 }}>D{diff.position}</span>
+        <span style={{ color: "#444" }}>·</span>
+        <span style={{ color: "#d4d4d4", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {diff.title}
+        </span>
+        <span style={{ color: "#4ec9b0" }}>+{diff.additions}</span>
+        {diff.deletions > 0 && <span style={{ color: "#f44747" }}>-{diff.deletions}</span>}
+        <span style={{ color: "#444" }}>·</span>
+        <span style={{ color: diff.status === "approved" || diff.status === "landed" ? "#4ec9b0" : diff.status === "submitted" ? "#569cd6" : "#858585" }}>
           {diff.status}
         </span>
-        <span style={{ color: "#555" }}>·</span>
+        <span style={{ color: "#444" }}>·</span>
         <button
-          onClick={() => setThemeName(themeName === "vscode" ? "github" : "vscode")}
-          style={{
-            background: "transparent",
-            border: `1px solid ${S.border}`,
-            borderRadius: 3,
-            padding: "2px 8px",
-            color: S.textSecondary,
-            cursor: "pointer",
-            fontSize: "10px",
-            fontFamily: S.font,
-          }}
-          title={`Switch to ${themeName === "vscode" ? "GitHub" : "VS Code"} theme`}
+          onClick={() => setViewMode(viewMode === "inline" ? "side-by-side" : "inline")}
+          style={{ background: "#333", border: "1px solid #444", borderRadius: 3, padding: "2px 8px", color: "#ccc", cursor: "pointer", fontSize: 10, fontFamily: "inherit" }}
         >
-          {themeName === "vscode" ? "GitHub theme" : "VS Code theme"}
+          {viewMode === "inline" ? "Side by side" : "Inline"}
         </button>
       </div>
 
-      {/* ── Stack nav ── */}
+      {/* ── Stack nav (28px) ── */}
       {siblingDiffs.length > 1 && (
-        <div style={{ height: 28, display: "flex", alignItems: "center", padding: "0 12px", gap: 4, borderBottom: `1px solid ${S.border}`, background: S.bg, fontSize: "11px" }}>
+        <div style={{
+          height: 28, display: "flex", alignItems: "center", padding: "0 12px", gap: 4,
+          borderBottom: "1px solid #2d2d2d", background: "#1e1e1e",
+          fontSize: 11, fontFamily: "'SF Mono', Menlo, monospace",
+        }}>
           {siblingDiffs.map((d, i) => {
             const isCurrent = d.position === posNum;
             const icon = d.status === "approved" || d.status === "landed" ? "✓" : d.status === "submitted" ? "◑" : "○";
-            const clr = d.status === "approved" || d.status === "landed" ? S.textSuccess : d.status === "submitted" ? S.textAccent : S.textSecondary;
+            const clr = d.status === "approved" || d.status === "landed" ? "#4ec9b0" : d.status === "submitted" ? "#569cd6" : "#858585";
             return (
-              <span key={d.uuid} style={{ display: "flex", alignItems: "center", gap: 2 }}>
-                {i > 0 && <span style={{ color: "#444", margin: "0 2px" }}>→</span>}
+              <span key={d.uuid} style={{ display: "flex", alignItems: "center" }}>
+                {i > 0 && <span style={{ color: "#333", margin: "0 3px" }}>→</span>}
                 <Link
                   href={`/diffs/${slug}/${d.position}`}
                   style={{
-                    padding: "1px 6px",
-                    borderRadius: 3,
+                    padding: "1px 6px", borderRadius: 3, textDecoration: "none",
                     background: isCurrent ? "#37373d" : "transparent",
-                    color: isCurrent ? S.textPrimary : S.textSecondary,
-                    textDecoration: "none",
+                    color: isCurrent ? "#d4d4d4" : "#858585",
                   }}
                 >
                   D{d.position}<span style={{ color: clr, marginLeft: 2 }}>{icon}</span>
@@ -347,128 +205,96 @@ export default function DiffReviewPage({
               </span>
             );
           })}
-          <span style={{ marginLeft: "auto", color: "#444" }}>n/p navigate</span>
+          <span style={{ marginLeft: "auto", color: "#333", fontSize: 10 }}>n/p diffs · j/k files</span>
         </div>
       )}
 
-      {/* ── Scrollable diff area ── */}
-      <div style={{ flex: 1, overflow: "auto" }}>
-        {files.map((file) => {
-          const diffLines = file.diff ? parseDiff(file.diff) : [];
-
-          return (
-            <div key={file.path}>
-              {/* File header — sticky */}
-              <div style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 10,
-                display: "flex",
-                alignItems: "center",
-                padding: "4px 12px",
-                background: S.bgHeader,
-                borderBottom: `1px solid ${S.border}`,
-                borderTop: `1px solid ${S.border}`,
-                fontSize: "12px",
-              }}>
-                <span style={{ color: S.textSecondary }}>
-                  {file.path.split("/").slice(0, -1).join("/")}/
+      {/* ── File tabs ── */}
+      {files.length > 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 0,
+          borderBottom: "1px solid #2d2d2d", background: "#252526",
+          overflow: "auto", flexShrink: 0,
+        }}>
+          {files.map((f, i) => {
+            const isActive = i === activeFileIdx;
+            const filename = f.path.split("/").pop();
+            return (
+              <button
+                key={f.path}
+                onClick={() => setActiveFileIdx(i)}
+                style={{
+                  padding: "6px 16px", border: "none", cursor: "pointer",
+                  fontFamily: "'SF Mono', Menlo, monospace", fontSize: 11,
+                  background: isActive ? "#1e1e1e" : "transparent",
+                  color: isActive ? "#d4d4d4" : "#858585",
+                  borderBottom: isActive ? "2px solid #569cd6" : "2px solid transparent",
+                  borderRight: "1px solid #2d2d2d",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span style={{ color: f.status === "added" ? "#4ec9b0" : f.status === "deleted" ? "#f44747" : "#d4d4d4" }}>
+                  {filename}
                 </span>
-                <span style={{ color: S.textPrimary, fontWeight: 600 }}>
-                  {file.path.split("/").pop()}
-                </span>
-                <span style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                  <span style={{ color: S.textSuccess }}>+{file.additions}</span>
-                  {file.deletions > 0 && <span style={{ color: S.textError }}>-{file.deletions}</span>}
-                </span>
-              </div>
+                <span style={{ marginLeft: 6, fontSize: 10, color: "#4ec9b0" }}>+{f.additions}</span>
+                {f.deletions > 0 && <span style={{ fontSize: 10, color: "#f44747" }}>-{f.deletions}</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-              {/* Diff table */}
-              {diffLines.length > 0 ? (
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: S.fontSize, lineHeight: S.lineHeight }}>
-                  <colgroup>
-                    <col style={{ width: 55 }} />
-                    <col style={{ width: 55 }} />
-                    <col />
-                  </colgroup>
-                  <tbody>
-                    {diffLines.map((line, i) => {
-                      if (line.type === "hunk") {
-                        return (
-                          <tr key={i}>
-                            <td colSpan={3} style={{
-                              padding: "4px 12px",
-                              background: S.bgHunk,
-                              color: S.textHunk,
-                              fontSize: "12px",
-                              borderTop: `1px solid #2a2a4a`,
-                              borderBottom: `1px solid #2a2a4a`,
-                            }}>
-                              {line.content}
-                            </td>
-                          </tr>
-                        );
-                      }
-
-                      const isAdd = line.type === "add";
-                      const isDel = line.type === "del";
-                      const rowBg = isAdd ? S.bgAdd : isDel ? S.bgDel : "transparent";
-                      const gutterBg = isAdd ? S.bgAddGutter : isDel ? S.bgDelGutter : S.bgGutter;
-                      const gutterColor = isAdd ? S.textGutterAdd : isDel ? S.textGutterDel : S.textGutter;
-
-                      return (
-                        <tr key={i} style={{ background: rowBg }}>
-                          {/* Old line number */}
-                          <td style={{
-                            textAlign: "right",
-                            padding: "0 8px 0 4px",
-                            color: gutterColor,
-                            background: gutterBg,
-                            borderRight: `1px solid ${S.borderGutter}`,
-                            userSelect: "none",
-                            fontSize: "12px",
-                            verticalAlign: "top",
-                          }}>
-                            {line.oldNum ?? ""}
-                          </td>
-                          {/* New line number */}
-                          <td style={{
-                            textAlign: "right",
-                            padding: "0 8px 0 4px",
-                            color: gutterColor,
-                            background: gutterBg,
-                            borderRight: `1px solid ${S.borderGutter}`,
-                            userSelect: "none",
-                            fontSize: "12px",
-                            verticalAlign: "top",
-                          }}>
-                            {line.newNum ?? ""}
-                          </td>
-                          {/* Code content */}
-                          <td style={{
-                            padding: "0 12px",
-                            whiteSpace: "pre",
-                            fontFamily: S.font,
-                            verticalAlign: "top",
-                          }}>
-                            <span style={{ color: isAdd ? "#6a9955" : isDel ? "#ce9178" : undefined, marginRight: 4, userSelect: "none" }}>
-                              {isAdd ? "+" : isDel ? "-" : " "}
-                            </span>
-                            {highlightLine(line.content)}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <div style={{ padding: "12px", color: S.textSecondary, fontSize: "12px" }}>
-                  No diff content available
-                </div>
-              )}
-            </div>
-          );
-        })}
+      {/* ── Monaco Diff Editor ── */}
+      <div style={{ flex: 1, overflow: "hidden" }}>
+        {activeFile && originalContent !== undefined && modifiedContent !== undefined ? (
+          viewMode === "side-by-side" ? (
+            <DiffEditor
+              original={originalContent || ""}
+              modified={modifiedContent || ""}
+              language={lang}
+              theme="vs-dark"
+              options={{
+                readOnly: true,
+                renderSideBySide: true,
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineHeight: 20,
+                scrollBeyondLastLine: false,
+                renderOverviewRuler: false,
+                overviewRulerBorder: false,
+                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+                padding: { top: 8, bottom: 8 },
+              }}
+            />
+          ) : (
+            <DiffEditor
+              original={originalContent || ""}
+              modified={modifiedContent || ""}
+              language={lang}
+              theme="vs-dark"
+              options={{
+                readOnly: true,
+                renderSideBySide: false,
+                minimap: { enabled: false },
+                fontSize: 13,
+                lineHeight: 20,
+                scrollBeyondLastLine: false,
+                renderOverviewRuler: false,
+                overviewRulerBorder: false,
+                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+                padding: { top: 8, bottom: 8 },
+              }}
+            />
+          )
+        ) : activeFile ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#555", fontSize: 12 }}>
+            Loading file content...
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#555", fontSize: 12 }}>
+            No files in this diff
+          </div>
+        )}
       </div>
     </div>
   );
