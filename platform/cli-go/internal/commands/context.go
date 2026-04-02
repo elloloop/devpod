@@ -32,8 +32,41 @@ func newContextCmd() *cobra.Command {
 
 			// Feature header
 			fmt.Printf("Feature: %s (%s)\n", feature.Name, format.FeatureTypePrefix(string(feature.Type)))
+			fmt.Printf("Branch:  %s\n", feature.Branch)
 
-			// Current diff
+			// Versions branch info
+			vb := feature.VersionsBranch
+			if vb == "" {
+				vb = workspace.VersionsBranchName(feature.Branch)
+			}
+			if git.BranchExists(vb) {
+				snapLabel := "snapshots"
+				if feature.SnapshotCount == 1 {
+					snapLabel = "snapshot"
+				}
+				fmt.Printf("Versions: %s (%d %s)\n", vb, feature.SnapshotCount, snapLabel)
+			}
+
+			// Editing state
+			if editingDiff != nil {
+				fmt.Printf("Editing: %s: %s\n", format.DiffLabel(editingDiff.Position), editingDiff.Title)
+				fmt.Println(format.DimText("  Make changes, then: devpod diff"))
+			}
+
+			// Pending rebase
+			if workspace.HasPendingRebase() {
+				pr := workspace.LoadPendingRebase()
+				if pr != nil {
+					fmt.Println()
+					fmt.Println(format.WarnMsg("Interrupted operation in progress."))
+					fmt.Printf("  Editing: %s\n", pr.EditingDiff)
+					fmt.Printf("  Remaining picks: %d\n", len(pr.RemainingPicks))
+					fmt.Println(format.DimText("  Resolve conflicts, then: devpod diff --continue"))
+					fmt.Println(format.DimText("  Or cancel: devpod diff --abort"))
+				}
+			}
+
+			// Current diff / stack
 			if len(diffs) > 0 {
 				sorted := sortDiffsByPosition(diffs)
 				var currentDiff workspace.DiffData
@@ -43,21 +76,26 @@ func newContextCmd() *cobra.Command {
 					currentDiff = sorted[len(sorted)-1]
 				}
 
-				fmt.Printf("Diff:    %s of %d \u2014 \"%s\"  [%s]\n",
+				fmt.Printf("Diff:    %s of %d -- \"%s\"  [%s]\n",
 					format.DiffLabel(currentDiff.Position),
 					len(diffs),
 					currentDiff.Title,
 					string(currentDiff.Status))
 
-				if editingDiff != nil {
-					fmt.Printf("         (editing %s)\n", format.DiffLabel(editingDiff.Position))
+				if currentDiff.Version > 1 {
+					fmt.Printf("         (version %d)\n", currentDiff.Version)
 				}
 
 				// Stack visualization
 				var stackParts []string
 				for _, d := range sorted {
-					stackParts = append(stackParts, fmt.Sprintf("%s %s %s",
+					vLabel := ""
+					if d.Version > 1 {
+						vLabel = fmt.Sprintf(" v%d", d.Version)
+					}
+					stackParts = append(stackParts, fmt.Sprintf("%s%s %s %s",
 						format.DiffLabel(d.Position),
+						vLabel,
 						format.DiffStatusIcon(string(d.Status)),
 						string(d.Status)))
 				}
@@ -70,7 +108,7 @@ func newContextCmd() *cobra.Command {
 			changes, _ := git.GetChangedFiles()
 			if len(changes) > 0 {
 				fmt.Println()
-				fmt.Println("Changed since last diff:")
+				fmt.Printf("Changed since last diff (%d files):\n", len(changes))
 				for _, change := range changes {
 					var statusLabel string
 					switch change.Status {

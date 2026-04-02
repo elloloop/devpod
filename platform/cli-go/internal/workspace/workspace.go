@@ -2,10 +2,12 @@ package workspace
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/elloloop/devpod/platform/cli-go/internal/git"
@@ -46,6 +48,10 @@ func undoDir(cwd ...string) string {
 
 func editingFilePath(cwd ...string) string {
 	return filepath.Join(devpodDir(cwd...), ".editing")
+}
+
+func pendingRebasePath(cwd ...string) string {
+	return filepath.Join(devpodDir(cwd...), ".pending-rebase")
 }
 
 // ---------------------------------------------------------------------------
@@ -236,6 +242,135 @@ func GetCurrentFeature(cwd ...string) *FeatureData {
 }
 
 // ---------------------------------------------------------------------------
+// Versions branch helpers
+// ---------------------------------------------------------------------------
+
+// VersionsBranchName returns the versions branch name for a feature branch.
+// feature/foo -> feature/foo--versions
+func VersionsBranchName(featureBranch string) string {
+	return featureBranch + "--versions"
+}
+
+// EnsureVersionsBranch creates the versions branch if it does not exist.
+func EnsureVersionsBranch(feature FeatureData, cwd ...string) error {
+	vb := VersionsBranchName(feature.Branch)
+	if git.BranchExists(vb, cwd...) {
+		return nil
+	}
+	// Create from current clean branch state
+	return git.CreateOrphanBranch(vb, feature.Branch, cwd...)
+}
+
+// ---------------------------------------------------------------------------
+// Snapshot management
+// ---------------------------------------------------------------------------
+
+// GetNextSnapshotID returns the next snapshot ID (S1, S2, etc.) for a feature.
+func GetNextSnapshotID(feature FeatureData, _ ...string) string {
+	return fmt.Sprintf("S%d", feature.SnapshotCount+1)
+}
+
+// BuildSnapshotMessage creates a commit message with trailers for a snapshot.
+func BuildSnapshotMessage(title string, trailers git.Trailers) string {
+	return title + git.FormatTrailers(trailers) + "\n"
+}
+
+// SnapshotInfo holds parsed information about a snapshot on the versions branch.
+type SnapshotInfo struct {
+	SHA      string
+	ID       string // S1, S2, etc.
+	Diff     string // D1, D2, etc. (empty for sync)
+	Version  int
+	Action   string // create, update, sync, land, undo
+	Stack    string // D1v2,D2v1,D3v1
+	Previous string
+	Message  string
+	Date     string
+}
+
+// GetSnapshotHistory parses the versions branch log for snapshot metadata.
+func GetSnapshotHistory(feature FeatureData, cwd ...string) []SnapshotInfo {
+	vb := VersionsBranchName(feature.Branch)
+	if !git.BranchExists(vb, cwd...) {
+		return nil
+	}
+
+	output, err := git.Run(fmt.Sprintf("log %s --format=%%H\t%%s\t%%b\t%%ci", vb), cwd...)
+	if err != nil || output == "" {
+		return nil
+	}
+
+	var snapshots []SnapshotInfo
+	for _, line := range strings.Split(output, "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 4)
+		if len(parts) < 2 {
+			continue
+		}
+		sha := parts[0]
+		subject := parts[1]
+		body := ""
+		date := ""
+		if len(parts) > 2 {
+			body = parts[2]
+		}
+		if len(parts) > 3 {
+			date = parts[3]
+		}
+
+		trailers := git.ParseTrailers(subject + "\n" + body)
+
+		version := 0
+		if trailers.Version != "" {
+			v, err := strconv.Atoi(trailers.Version)
+			if err == nil {
+				version = v
+			}
+		}
+
+		info := SnapshotInfo{
+			SHA:      sha,
+			ID:       trailers.Snapshot,
+			Diff:     trailers.Diff,
+			Version:  version,
+			Action:   trailers.Action,
+			Stack:    trailers.Stack,
+			Previous: trailers.Previous,
+			Message:  subject,
+			Date:     date,
+		}
+		snapshots = append(snapshots, info)
+	}
+	return snapshots
+}
+
+// GetSnapshotForDiffVersion finds the snapshot for a specific diff version.
+func GetSnapshotForDiffVersion(feature FeatureData, diffID string, version int, cwd ...string) *SnapshotInfo {
+	snapshots := GetSnapshotHistory(feature, cwd...)
+	for i := range snapshots {
+		if snapshots[i].Diff == diffID && snapshots[i].Version == version {
+			return &snapshots[i]
+		}
+	}
+	return nil
+}
+
+// GetStackString returns a string like "D1v2,D2v1,D3v1" for the current state of the stack.
+func GetStackString(feature FeatureData, cwd ...string) string {
+	var parts []string
+	for _, diffID := range feature.Diffs {
+		diff, err := LoadDiff(diffID, cwd...)
+		if err != nil || diff == nil {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%sv%d", diff.ID, diff.Version))
+	}
+	return strings.Join(parts, ",")
+}
+
+// ---------------------------------------------------------------------------
 // Diffs
 // ---------------------------------------------------------------------------
 
@@ -244,7 +379,7 @@ func GenerateDiffUUID() string {
 	return uuid.New().String()
 }
 
-// LoadDiff reads a diff file by UUID.
+// LoadDiff reads a diff file by UUID or ID.
 func LoadDiff(id string, cwd ...string) (*DiffData, error) {
 	filePath := filepath.Join(diffsDir(cwd...), id+".json")
 	data, err := os.ReadFile(filePath)
@@ -267,7 +402,12 @@ func SaveDiff(diff DiffData, cwd ...string) error {
 	if err != nil {
 		return err
 	}
-	filePath := filepath.Join(diffsDir(cwd...), diff.UUID+".json")
+	// Use UUID if set, otherwise ID
+	filename := diff.UUID
+	if filename == "" {
+		filename = diff.ID
+	}
+	filePath := filepath.Join(diffsDir(cwd...), filename+".json")
 	return os.WriteFile(filePath, append(data, '\n'), 0o644)
 }
 
@@ -309,6 +449,56 @@ func GetDiffByPosition(feature FeatureData, position int, cwd ...string) *DiffDa
 	return nil
 }
 
+// GetDiffByID finds a diff by its stable ID (D1, D2, etc.).
+func GetDiffByID(feature FeatureData, diffID string, cwd ...string) *DiffData {
+	diffs := LoadDiffsForFeature(feature, cwd...)
+	for i := range diffs {
+		if diffs[i].ID == diffID {
+			return &diffs[i]
+		}
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Diff version tracking
+// ---------------------------------------------------------------------------
+
+// AddDiffVersion adds a version record to a diff and saves it.
+func AddDiffVersion(feature *FeatureData, diffID string, version DiffVersion, cwd ...string) error {
+	diff, err := LoadDiff(diffID, cwd...)
+	if err != nil {
+		return fmt.Errorf("could not load diff %s: %w", diffID, err)
+	}
+	diff.Versions = append(diff.Versions, version)
+	diff.Version = version.Number
+	return SaveDiff(*diff, cwd...)
+}
+
+// GetDiffVersions returns all versions for a specific diff.
+func GetDiffVersions(feature FeatureData, diffID string, cwd ...string) []DiffVersion {
+	diff, err := LoadDiff(diffID, cwd...)
+	if err != nil || diff == nil {
+		return nil
+	}
+	return diff.Versions
+}
+
+// GetLatestDiffVersion returns the latest version for a diff.
+func GetLatestDiffVersion(feature FeatureData, diffID string, cwd ...string) *DiffVersion {
+	versions := GetDiffVersions(feature, diffID, cwd...)
+	if len(versions) == 0 {
+		return nil
+	}
+	latest := &versions[0]
+	for i := range versions {
+		if versions[i].Number > latest.Number {
+			latest = &versions[i]
+		}
+	}
+	return latest
+}
+
 // ---------------------------------------------------------------------------
 // Trailer-based diff discovery (primary source of truth)
 // ---------------------------------------------------------------------------
@@ -341,9 +531,14 @@ func LoadDiffsFromTrailers(feature FeatureData, cwd ...string) []DiffData {
 			Updated:  "",
 		}
 
+		if c.Trailers.Diff != "" {
+			diff.ID = c.Trailers.Diff
+		}
+
 		// Merge cached metadata (status, CI, files, etc.)
 		if cached != nil {
 			diff.UUID = cached.UUID
+			diff.ID = cached.ID
 			diff.Description = cached.Description
 			diff.Files = cached.Files
 			diff.Additions = cached.Additions
@@ -353,6 +548,7 @@ func LoadDiffsFromTrailers(feature FeatureData, cwd ...string) []DiffData {
 			diff.GitHubPR = cached.GitHubPR
 			diff.Created = cached.Created
 			diff.Updated = cached.Updated
+			diff.Versions = cached.Versions
 		} else {
 			diff.UUID = GenerateDiffUUID()
 			diff.Status = Draft
@@ -400,12 +596,6 @@ func parseVersion(s string) int {
 	if s == "" {
 		return 1
 	}
-	v := 1
-	for _, c := range s {
-		if c >= '0' && c <= '9' {
-			v = v*10 + int(c-'0') - v // simplified: just parse the number
-		}
-	}
 	// Simple atoi
 	n := 0
 	for _, c := range s {
@@ -445,6 +635,105 @@ func GetEditingDiff(cwd ...string) string {
 	}
 	s := strings.TrimSpace(string(data))
 	return s
+}
+
+// ---------------------------------------------------------------------------
+// Pending rebase (for --continue/--abort)
+// ---------------------------------------------------------------------------
+
+// SavePendingRebase saves a pending rebase state to disk.
+func SavePendingRebase(pr PendingRebase, cwd ...string) error {
+	if err := EnsureDevpodDir(cwd...); err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(pr, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(pendingRebasePath(cwd...), append(data, '\n'), 0o644)
+}
+
+// LoadPendingRebase reads the pending rebase state, or returns nil if none.
+func LoadPendingRebase(cwd ...string) *PendingRebase {
+	data, err := os.ReadFile(pendingRebasePath(cwd...))
+	if err != nil {
+		return nil
+	}
+	var pr PendingRebase
+	if err := json.Unmarshal(data, &pr); err != nil {
+		return nil
+	}
+	return &pr
+}
+
+// ClearPendingRebase removes the pending rebase state file.
+func ClearPendingRebase(cwd ...string) error {
+	return os.Remove(pendingRebasePath(cwd...))
+}
+
+// HasPendingRebase returns true if there is an interrupted operation.
+func HasPendingRebase(cwd ...string) bool {
+	_, err := os.Stat(pendingRebasePath(cwd...))
+	return err == nil
+}
+
+// ---------------------------------------------------------------------------
+// Safety checks
+// ---------------------------------------------------------------------------
+
+// HasUncommittedChanges returns true if there are uncommitted changes.
+func HasUncommittedChanges(cwd ...string) bool {
+	return !git.IsClean(cwd...)
+}
+
+// ValidateCleanBranchState checks that the branch is in a valid state for operations.
+func ValidateCleanBranchState(feature FeatureData, cwd ...string) error {
+	if HasUncommittedChanges(cwd...) {
+		return fmt.Errorf("You have unsaved changes.\n\n  Run `devpod diff` to save them first.\n  Or `devpod diff --stash` to stash them temporarily.")
+	}
+	return nil
+}
+
+// DetectBranchMismatch checks if the current branch matches the expected feature branch.
+// Returns (mismatch, currentBranch).
+func DetectBranchMismatch(feature FeatureData, cwd ...string) (bool, string) {
+	branch, err := git.GetCurrentBranch(cwd...)
+	if err != nil {
+		return true, ""
+	}
+	return branch != feature.Branch, branch
+}
+
+// ValidateOnFeatureBranch verifies we're on a feature branch and returns it.
+func ValidateOnFeatureBranch(cwd ...string) (*FeatureData, error) {
+	branch, err := git.GetCurrentBranch(cwd...)
+	if err != nil {
+		return nil, fmt.Errorf("Could not determine current branch.\n\n  Make sure you're inside a project directory.")
+	}
+	feature := GetCurrentFeature(cwd...)
+	if feature == nil {
+		return nil, fmt.Errorf("Not on a feature branch.\n\n  Start one with: devpod feature \"name\"")
+	}
+	if feature.Branch != branch {
+		return nil, fmt.Errorf("Expected branch %s but on %s.\n\n  Run: devpod switch \"%s\"", feature.Branch, branch, feature.Name)
+	}
+	return feature, nil
+}
+
+// EnsureCleanOrAutoSave checks for uncommitted changes and refuses with a message.
+func EnsureCleanOrAutoSave(cwd ...string) error {
+	if !HasUncommittedChanges(cwd...) {
+		return nil
+	}
+	return fmt.Errorf("You have unsaved changes.\n\n  Run `devpod diff` to save them first.\n  Or `devpod diff --stash` to stash them temporarily.")
+}
+
+// CheckPendingRebase returns an error if there is an interrupted operation.
+func CheckPendingRebase(cwd ...string) error {
+	if !HasPendingRebase(cwd...) {
+		return nil
+	}
+	return fmt.Errorf("A previous operation was interrupted.\n\n  Resolve conflicts, then:\n    devpod diff --continue\n    devpod diff --abort")
 }
 
 // ---------------------------------------------------------------------------

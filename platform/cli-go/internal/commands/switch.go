@@ -17,6 +17,18 @@ func newSwitchCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			query := args[0]
+
+			// Check uncommitted changes -- refuse
+			if workspace.HasUncommittedChanges() {
+				return fmt.Errorf("%s\n\n  Save your changes first with: devpod diff",
+					format.ErrorMsg("You have unsaved changes."))
+			}
+
+			// Check pending rebase
+			if err := workspace.CheckPendingRebase(); err != nil {
+				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
+			}
+
 			features := workspace.ListFeatures()
 			q := strings.ToLower(query)
 
@@ -34,7 +46,7 @@ func newSwitchCmd() *cobra.Command {
 					fmt.Println()
 					fmt.Println("Available features:")
 					for _, f := range features {
-						fmt.Printf("  \u2022 %s\n", f.Name)
+						fmt.Printf("  \u2022 %s (%s)\n", f.Name, format.FeatureTypePrefix(string(f.Type)))
 					}
 				}
 				return fmt.Errorf("no feature found")
@@ -52,9 +64,6 @@ func newSwitchCmd() *cobra.Command {
 
 			target := matches[0]
 
-			// Auto-save uncommitted changes on current feature
-			autoSaveChanges()
-
 			// Switch to the feature branch
 			if err := git.SwitchBranch(target.Branch); err != nil {
 				return fmt.Errorf("%s", format.ErrorMsg(err.Error()))
@@ -69,7 +78,11 @@ func newSwitchCmd() *cobra.Command {
 				sorted := sortDiffsByPosition(diffs)
 				var stackParts []string
 				for _, d := range sorted {
-					stackParts = append(stackParts, fmt.Sprintf("%s %s", format.DiffLabel(d.Position), format.DiffStatusIcon(string(d.Status))))
+					vLabel := ""
+					if d.Version > 1 {
+						vLabel = fmt.Sprintf(" v%d", d.Version)
+					}
+					stackParts = append(stackParts, fmt.Sprintf("%s%s %s", format.DiffLabel(d.Position), vLabel, format.DiffStatusIcon(string(d.Status))))
 				}
 				fmt.Println(format.DimText(fmt.Sprintf("  Stack: %s", strings.Join(stackParts, " \u2192 "))))
 			}

@@ -6,7 +6,7 @@ func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "devpod",
 		Short:   "Developer workflow CLI",
-		Version: "1.0.0",
+		Version: "2.0.0",
 	}
 
 	// Workflow commands

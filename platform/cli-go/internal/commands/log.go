@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/elloloop/devpod/platform/cli-go/internal/format"
+	"github.com/elloloop/devpod/platform/cli-go/internal/snapshot"
 	"github.com/elloloop/devpod/platform/cli-go/internal/workspace"
 	"github.com/spf13/cobra"
 )
@@ -60,7 +61,7 @@ func newLogCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "log",
-		Short: "Show activity log",
+		Short: "Show activity log (from versions branch and local metadata)",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			maxEntries, _ := strconv.Atoi(limit)
 			if maxEntries <= 0 {
@@ -95,6 +96,35 @@ func newLogCmd() *cobra.Command {
 							Timestamp: d.Updated,
 							Message:   fmt.Sprintf("Submitted %s: %s", format.DiffLabel(d.Position), d.Title),
 						})
+					}
+
+					// Collect from version history
+					for _, v := range d.Versions {
+						if v.Action != "create" { // create already shown above
+							events = append(events, logEvent{
+								Timestamp: v.Timestamp,
+								Message:   fmt.Sprintf("%s %s v%d: %s", v.Action, format.DiffLabel(d.Position), v.Number, v.Message),
+							})
+						}
+					}
+				}
+
+				// Collect snapshot events from versions branch
+				vb := feature.VersionsBranch
+				if vb == "" {
+					vb = workspace.VersionsBranchName(feature.Branch)
+				}
+				snapshots, err := snapshot.ListSnapshots(vb)
+				if err == nil {
+					for _, s := range snapshots {
+						if s.Action == "sync" || s.Action == "land" || s.Action == "undo" {
+							ts := s.Date
+							// Try to normalize date
+							events = append(events, logEvent{
+								Timestamp: ts,
+								Message:   fmt.Sprintf("[snapshot %s] %s: %s", s.ID, s.Action, s.Message),
+							})
+						}
 					}
 				}
 			}

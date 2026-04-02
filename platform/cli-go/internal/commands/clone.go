@@ -16,7 +16,12 @@ func newCloneCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "clone <repo>",
 		Short: "Clone a repository and set up devpod",
-		Args:  cobra.ExactArgs(1),
+		Long: `Clone a repository and initialize the devpod workspace.
+
+Each feature you create will have two branches:
+  feature/<slug>           Your working branch (clean commits)
+  feature/<slug>--versions  Append-only history of every save`,
+		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			repo := args[0]
 
