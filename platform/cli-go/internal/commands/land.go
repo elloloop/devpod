@@ -168,6 +168,7 @@ func newLandCmd() *cobra.Command {
 
 			// Result
 			fmt.Printf("%s Landed %s: %s\n", format.SuccessMsg("\u2713"), format.DiffLabel(targetDiff.Position), targetDiff.Title)
+			fmt.Printf("  History: http://localhost:3000/diffs/%s\n", format.DimText(feature.Slug))
 
 			if len(feature.Diffs) == 0 {
 				fmt.Println(format.DimText("  Feature complete! All diffs landed."))
