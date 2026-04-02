@@ -94,7 +94,7 @@ function readDevpodData(): FeatureWithDiffs[] | null {
           readFileSync(join(diffsDir, diffFile), "utf-8")
         );
 
-        if (diffData.featureSlug === featureData.slug) {
+        if ((diffData.feature || diffData.featureSlug) === featureData.slug) {
           const files = diffData.commit
             ? parseFilesFromDiff(diffData.commit)
             : [];
