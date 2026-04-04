@@ -6,8 +6,8 @@
 
 :root {
   /* Backgrounds */
-  --dp-bg: #0a0a0b;
-  --dp-bg-secondary: #111113;
+  --dp-bg: #0c0c0c;
+  --dp-bg-secondary: #141414;
   --dp-bg-tertiary: #18181b;
   --dp-bg-hover: #1c1c1f;
   --dp-bg-active: #27272a;
@@ -22,8 +22,8 @@
   --dp-text-tertiary: #52525b;
 
   /* Accent */
-  --dp-accent: #818cf8;
-  --dp-accent-hover: #a5b4fc;
+  --dp-accent: #3b82f6;
+  --dp-accent-hover: #60a5fa;
 
   /* Status */
   --dp-success: #34d399;
@@ -39,7 +39,7 @@
   --dp-diff-del-bg: #2c0b0e;
   --dp-diff-del-gutter: #450a0a;
   --dp-diff-hunk-bg: #0c0a1e;
-  --dp-diff-hunk-text: #818cf8;
+  --dp-diff-hunk-text: #3b82f6;
 
   /* Syntax */
   --dp-syntax-keyword: #c084fc;
@@ -49,7 +49,7 @@
   --dp-syntax-number: #fda4af;
 
   /* Status bar */
-  --dp-statusbar: #818cf8;
+  --dp-statusbar: #3b82f6;
   --dp-statusbar-text: #ffffff;
 
   /* Monaco theme name (read by JS, not a CSS render property) */
