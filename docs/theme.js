@@ -1,12 +1,11 @@
 /**
- * DevPod Unified Theme System — single source of truth.
- * Vanilla JS, zero deps, applies CSS vars to :root, persists in localStorage.
+ * DevPod Unified Theme System
+ * Single source of truth for all pages. Vanilla JS, zero deps.
  */
 window.DevpodTheme = (function () {
   'use strict';
   var SK = 'devpod-theme', CK = 'devpod-scheme';
 
-  // CSS variable names in order — keeps definitions compact
   var K = [
     '--dp-bg','--dp-bg-secondary','--dp-bg-tertiary','--dp-bg-hover','--dp-bg-active',
     '--dp-border','--dp-border-subtle',
@@ -20,11 +19,9 @@ window.DevpodTheme = (function () {
     '--dp-statusbar','--dp-statusbar-text','--dp-monaco-theme'
   ];
 
-  // Scheme values as arrays matching K order. [dark, light]
-  // Each scheme: { label, accent, d: [...dark values], l: [...light values] }
   var S = {
-    linear: {
-      label:'Linear', accent:'#818cf8',
+    default: {
+      label:'Default', accent:'#818cf8',
       d:['#0a0a0b','#111113','#18181b','#1c1c1f','#27272a','#27272a','#1e1e22','#e4e4e7','#a1a1aa','#52525b','#818cf8','#a5b4fc','#34d399','#f87171','#fbbf24','#60a5fa','#0f0f11','#3f3f46','#052e16','#064e3b','#2c0b0e','#450a0a','#0c0a1e','#818cf8','#c084fc','#86efac','#52525b','#93c5fd','#fda4af','#818cf8','#fff','vs-dark'],
       l:['#fff','#f8f9fa','#f0f1f3','#edeef0','#e4e5e9','#e0e1e6','#ebebef','#1d1d1f','#6b6f76','#b0b3bb','#6366f1','#4f46e5','#16a34a','#dc2626','#d97706','#2563eb','#f8f9fa','#b0b3bb','#ecfdf5','#d1fae5','#fef2f2','#fecaca','#eff6ff','#2563eb','#7c3aed','#16a34a','#9ca3af','#2563eb','#ea580c','#6366f1','#fff','light']
     },
@@ -34,7 +31,7 @@ window.DevpodTheme = (function () {
       l:['#fff','#f6f8fa','#eaeef2','#eaeef2','#d0d7de','#d0d7de','#e1e4e8','#1f2328','#656d76','#8c959f','#0969da','#0550ae','#1a7f37','#cf222e','#9a6700','#0969da','#f6f8fa','#8c959f','#dafbe1','#aceebb','#ffebe9','#ffcecb','#ddf4ff','#0969da','#cf222e','#0a3069','#8c959f','#8250df','#0550ae','#0969da','#fff','light']
     },
     retro: {
-      label:'Retro Peppy', accent:'#fbbf24',
+      label:'Retro', accent:'#fbbf24',
       d:['#1a1a0a','#22220e','#2a2a12','#302e14','#3a3818','#4a4820','#3a3818','#f5f0d0','#c8c090','#807850','#fbbf24','#fcd34d','#4ade80','#ec4899','#f97316','#38bdf8','#1e1e0c','#6b6530','#1a2e10','#264a18','#30101a','#4a1828','#2a2200','#fbbf24','#38bdf8','#ec4899','#807850','#fbbf24','#4ade80','#fbbf24','#1a1a0a','vs-dark'],
       l:['#fef9c3','#fef3a0','#fde68a','#fde274','#fcd34d','#e5b800','#f0d050','#1c1508','#5c4a10','#8a7520','#f97316','#ea580c','#16a34a','#db2777','#d97706','#0284c7','#fef3a0','#8a7520','#d9f99d','#bef264','#fce7f3','#fbcfe8','#fff7c2','#b45309','#7c3aed','#db2777','#8a7520','#b45309','#16a34a','#f97316','#1c1508','light']
     },
@@ -44,14 +41,24 @@ window.DevpodTheme = (function () {
       l:['#f0f9ff','#e0f2fe','#d1ecfc','#c5e7fa','#b0ddf7','#93c5e8','#b6d9f2','#0c4a6e','#1e6b94','#6b9dbb','#0d9488','#0f766e','#16a34a','#dc2626','#d97706','#0284c7','#e0f2fe','#6b9dbb','#dcfce7','#bbf7d0','#fef2f2','#fecaca','#e0f4ff','#0d9488','#7c3aed','#0f766e','#6b9dbb','#0284c7','#b45309','#0f766e','#fff','light']
     },
     rose: {
-      label:'Rose Pine', accent:'#eb6f92',
+      label:'Rosé Pine', accent:'#eb6f92',
       d:['#191724','#1f1d2e','#26233a','#2a2740','#312e48','#2a2740','#211f30','#e0def4','#908caa','#6e6a86','#eb6f92','#f4a0b5','#31748f','#eb6f92','#f6c177','#9ccfd8','#191724','#44405a','#14242e','#1a3440','#2e1420','#401a2a','#1c1830','#c4a7e7','#c4a7e7','#f6c177','#6e6a86','#eb6f92','#9ccfd8','#eb6f92','#fff','vs-dark'],
       l:['#faf4ed','#f2e9e1','#eaddd3','#e2d5c8','#d7ccc0','#d4c8bc','#e0d5c8','#286983','#575279','#9893a5','#d7827e','#c5645f','#56949f','#b4637a','#ea9d34','#56949f','#f2e9e1','#9893a5','#e4f0e8','#c9e4d0','#f5e0e4','#f0c8d0','#f0e8e0','#907aa9','#907aa9','#ea9d34','#9893a5','#d7827e','#56949f','#d7827e','#191724','light']
     }
   };
 
-  var schemeKeys = ['linear','github','retro','midnight','rose'];
-  var curMode = 'dark', curScheme = 'linear', mqDark = null, pickerId = null;
+  var schemeKeys = ['default','github','retro','midnight','rose'];
+  var curMode = 'dark', curScheme = 'default', mqDark = null, pickerIds = [];
+
+  // SVG icons — no emojis
+  var icons = {
+    sun: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>',
+    moon: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8.5a5.5 5.5 0 0 1-7-7A5.5 5.5 0 1 0 13.5 8.5z"/></svg>',
+    monitor: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="9" rx="1.5"/><path d="M5.5 14h5M8 11v3"/></svg>',
+    chevron: '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4l2 2 2-2"/></svg>',
+    check: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 6l3 3 5-5"/></svg>',
+    palette: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><circle cx="8" cy="4.5" r="1" fill="currentColor"/><circle cx="5" cy="7" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/><circle cx="6.5" cy="10.5" r="1" fill="currentColor"/></svg>'
+  };
 
   function resolved() {
     if (curMode === 'system') return (mqDark && mqDark.matches) ? 'dark' : 'light';
@@ -65,12 +72,11 @@ window.DevpodTheme = (function () {
     r.setAttribute('data-dp-mode', v);
     r.setAttribute('data-dp-scheme', curScheme);
     try { window.dispatchEvent(new CustomEvent('devpod-theme-change', { detail: { mode: curMode, scheme: curScheme, resolved: v } })); } catch(e){}
-    refreshPicker();
+    for (var p = 0; p < pickerIds.length; p++) refreshPicker(pickerIds[p]);
   }
 
   function save() { try { localStorage.setItem(SK, curMode); localStorage.setItem(CK, curScheme); } catch(e){} }
   function load() { try { var m = localStorage.getItem(SK), s = localStorage.getItem(CK); if (m==='light'||m==='dark'||m==='system') curMode=m; if (s&&S[s]) curScheme=s; } catch(e){} }
-
   function setMode(m) { if(m!=='light'&&m!=='dark'&&m!=='system') return; curMode=m; save(); apply(); }
   function setScheme(s) { if(!S[s]) return; curScheme=s; save(); apply(); }
   function getMode() { return curMode; }
@@ -83,40 +89,102 @@ window.DevpodTheme = (function () {
     mqDark.addEventListener ? mqDark.addEventListener('change',h) : mqDark.addListener(h);
   }
 
-  function refreshPicker() {
-    if (!pickerId) return;
-    var c = document.getElementById(pickerId); if(!c) return;
+  function refreshPicker(id) {
+    var c = document.getElementById(id); if(!c) return;
+    // Mode buttons
     var mb = c.querySelectorAll('[data-m]');
-    for(var i=0;i<mb.length;i++){var b=mb[i],a=b.getAttribute('data-m')===curMode; b.style.background=a?'var(--dp-bg-active)':'transparent'; b.style.color=a?'var(--dp-text)':'var(--dp-text-tertiary)';}
-    var sb = c.querySelectorAll('[data-s]');
-    for(var j=0;j<sb.length;j++){var d=sb[j],k=d.getAttribute('data-s'); d.style.outline=(k===curScheme)?'2px solid var(--dp-accent)':'2px solid transparent'; d.style.outlineOffset='2px';}
+    for(var i=0;i<mb.length;i++){
+      var b=mb[i], a=b.getAttribute('data-m')===curMode;
+      b.style.background = a ? 'var(--dp-accent)' : 'transparent';
+      b.style.color = a ? 'var(--dp-statusbar-text)' : 'var(--dp-text-tertiary)';
+    }
+    // Scheme label
+    var label = c.querySelector('[data-scheme-label]');
+    if (label) label.textContent = S[curScheme].label;
+    // Dropdown items
+    var items = c.querySelectorAll('[data-s]');
+    for(var j=0;j<items.length;j++){
+      var it=items[j], k=it.getAttribute('data-s'), active=k===curScheme;
+      var chk = it.querySelector('.dp-check');
+      if(chk) chk.style.opacity = active ? '1' : '0';
+      it.style.background = active ? 'var(--dp-bg-active)' : 'transparent';
+    }
   }
+
+  // ── Picker UI ──
+  // A compact control: [mode toggle] [scheme dropdown]
 
   function mountPicker(id) {
-    pickerId = id;
+    pickerIds.push(id);
     var c = document.getElementById(id); if(!c) return;
-    var h = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12px;">';
-    // Mode buttons
-    h += '<div style="display:flex;gap:2px;background:var(--dp-bg-secondary);border:1px solid var(--dp-border);border-radius:6px;padding:2px;">';
-    var modes = [['light','\u2600\uFE0F','Light'],['dark','\uD83C\uDF19','Dark'],['system','\uD83D\uDDA5\uFE0F','System']];
-    for(var i=0;i<3;i++) h+='<button data-m="'+modes[i][0]+'" title="'+modes[i][2]+'" style="border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:13px;line-height:1;transition:all .15s;background:transparent;color:var(--dp-text-tertiary);">'+modes[i][1]+'</button>';
+
+    var h = '';
+    // Container
+    h += '<div style="display:flex;align-items:center;gap:6px;position:relative;">';
+
+    // Mode toggle — 3 small icon buttons in a pill
+    h += '<div style="display:flex;border:1px solid var(--dp-border);border-radius:6px;overflow:hidden;">';
+    var modes = [['light',icons.sun,'Light'],['dark',icons.moon,'Dark'],['system',icons.monitor,'Auto']];
+    for(var i=0;i<3;i++) {
+      h += '<button data-m="'+modes[i][0]+'" title="'+modes[i][2]+'" style="border:none;padding:5px 7px;cursor:pointer;display:flex;align-items:center;transition:all .15s;background:transparent;color:var(--dp-text-tertiary);line-height:0;'+(i<2?'border-right:1px solid var(--dp-border);':'')+'">'+modes[i][1]+'</button>';
+    }
     h += '</div>';
-    // Scheme buttons
-    h += '<div style="display:flex;align-items:center;gap:4px;">';
-    for(var j=0;j<schemeKeys.length;j++){var k=schemeKeys[j],sc=S[k]; h+='<button data-s="'+k+'" title="'+sc.label+'" style="border:none;border-radius:6px;padding:3px 8px;cursor:pointer;display:flex;align-items:center;gap:4px;background:var(--dp-bg-secondary);transition:all .15s;font-family:inherit;font-size:11px;font-weight:500;color:var(--dp-text-secondary);"><span style="width:10px;height:10px;border-radius:50%;background:'+sc.accent+';display:inline-block;flex-shrink:0;"></span><span class="dp-picker-label">'+sc.label+'</span></button>';}
-    h += '</div></div>';
+
+    // Scheme dropdown — button that opens a menu
+    h += '<div style="position:relative;" class="dp-scheme-wrap">';
+    h += '<button class="dp-scheme-btn" style="display:flex;align-items:center;gap:5px;border:1px solid var(--dp-border);border-radius:6px;padding:4px 8px 4px 6px;cursor:pointer;background:transparent;color:var(--dp-text-secondary);font-family:inherit;font-size:11px;font-weight:500;line-height:1;transition:all .15s;">';
+    h += '<span style="width:8px;height:8px;border-radius:50%;background:var(--dp-accent);flex-shrink:0;"></span>';
+    h += '<span data-scheme-label>'+S[curScheme].label+'</span>';
+    h += icons.chevron;
+    h += '</button>';
+
+    // Dropdown menu
+    h += '<div class="dp-scheme-menu" style="display:none;position:absolute;top:calc(100% + 4px);right:0;min-width:160px;background:var(--dp-bg-secondary);border:1px solid var(--dp-border);border-radius:8px;padding:4px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:999;">';
+    for(var j=0;j<schemeKeys.length;j++){
+      var k=schemeKeys[j], sc=S[k];
+      h += '<button data-s="'+k+'" style="display:flex;align-items:center;gap:8px;width:100%;border:none;border-radius:4px;padding:6px 8px;cursor:pointer;background:transparent;color:var(--dp-text);font-family:inherit;font-size:12px;text-align:left;transition:background .1s;" onmouseenter="this.style.background=\'var(--dp-bg-hover)\'" onmouseleave="this.style.background=this.getAttribute(\'data-s\')===DevpodTheme.getScheme()?\'var(--dp-bg-active)\':\'transparent\'">';
+      h += '<span style="width:10px;height:10px;border-radius:50%;background:'+sc.accent+';flex-shrink:0;"></span>';
+      h += '<span style="flex:1;">'+sc.label+'</span>';
+      h += '<span class="dp-check" style="opacity:0;color:var(--dp-accent);">'+icons.check+'</span>';
+      h += '</button>';
+    }
+    h += '</div></div></div>';
+
     c.innerHTML = h;
-    var mb=c.querySelectorAll('[data-m]'); for(var mi=0;mi<mb.length;mi++) mb[mi].addEventListener('click',function(){setMode(this.getAttribute('data-m'));});
-    var sb=c.querySelectorAll('[data-s]'); for(var si=0;si<sb.length;si++) sb[si].addEventListener('click',function(){setScheme(this.getAttribute('data-s'));});
-    refreshPicker();
+
+    // Mode click handlers
+    var mb=c.querySelectorAll('[data-m]');
+    for(var mi=0;mi<mb.length;mi++) mb[mi].addEventListener('click',function(){setMode(this.getAttribute('data-m'));});
+
+    // Scheme click handlers
+    var sb=c.querySelectorAll('[data-s]');
+    for(var si=0;si<sb.length;si++) sb[si].addEventListener('click',function(){setScheme(this.getAttribute('data-s'));closeMenus();});
+
+    // Dropdown toggle
+    var btn = c.querySelector('.dp-scheme-btn');
+    var menu = c.querySelector('.dp-scheme-menu');
+    if (btn && menu) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var open = menu.style.display !== 'none';
+        closeMenus();
+        if (!open) menu.style.display = 'block';
+      });
+    }
+
+    refreshPicker(id);
   }
 
-  function getThemePickerHTML() {
-    return '<div id="dp-theme-picker-inline"></div><script>DevpodTheme&&DevpodTheme.mountPicker("dp-theme-picker-inline");<\/script>';
+  function closeMenus() {
+    var menus = document.querySelectorAll('.dp-scheme-menu');
+    for (var i = 0; i < menus.length; i++) menus[i].style.display = 'none';
   }
+
+  // Close dropdown on outside click
+  document.addEventListener('click', closeMenus);
 
   function init() { setupSys(); load(); apply(); }
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 
-  return { init:init, setMode:setMode, setScheme:setScheme, getMode:getMode, getScheme:getScheme, mountPicker:mountPicker, getThemePickerHTML:getThemePickerHTML, schemes:S, schemeKeys:schemeKeys };
+  return { init:init, setMode:setMode, setScheme:setScheme, getMode:getMode, getScheme:getScheme, mountPicker:mountPicker, schemes:S, schemeKeys:schemeKeys };
 })();
