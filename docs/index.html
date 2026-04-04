@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>devpod — Ship code without learning git</title>
+  <meta name="description" content="A developer workflow CLI that replaces git with simple verbs. Stacked diffs, local CI, VS Code-quality diff viewer. One binary, zero dependencies.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #0a0a0b;
+      --bg-elevated: #18181b;
+      --bg-subtle: #111113;
+      --text: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --cyan: #06b6d4;
+      --border: #27272a;
+      --max-w: 1100px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* ── Utility ── */
+    .container {
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    code, .mono {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(10, 10, 11, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    nav .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 60px;
+    }
+
+    nav .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    nav .logo span {
+      color: var(--accent);
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    nav .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover {
+      color: var(--text);
+    }
+
+    nav .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    nav .nav-cta:hover {
+      background: var(--accent-hover);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 160px 0 100px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 600px;
+      background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .hero .badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 7vw, 4.5rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 50%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero .subtitle {
+      font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 560px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    /* Install box */
+    .install-box {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 4px 4px 4px 20px;
+      gap: 12px;
+      margin-bottom: 32px;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .install-box code {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .install-box code .prompt {
+      color: var(--accent);
+    }
+
+    .install-box .copy-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+
+    .install-box .copy-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-dim);
+      transform: translateY(-1px);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ── Demo Terminal ── */
+    .demo {
+      padding: 60px 0 100px;
+    }
+
+    .terminal {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 720px;
+      margin: 0 auto;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+    }
+
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: rgba(39, 39, 42, 0.5);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .terminal-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .terminal-dot.red { background: #ef4444; }
+    .terminal-dot.yellow { background: #eab308; }
+    .terminal-dot.green { background: #22c55e; }
+
+    .terminal-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .terminal-body {
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.85;
+      overflow-x: auto;
+    }
+
+    .terminal-body .line {
+      white-space: pre;
+      opacity: 0;
+      animation: termFadeIn 0.3s forwards;
+    }
+
+    .terminal-body .line.blank {
+      height: 1.85em;
+    }
+
+    .terminal-body .prompt-sym { color: var(--accent); }
+    .terminal-body .cmd { color: var(--text); font-weight: 500; }
+    .terminal-body .success { color: var(--green); }
+    .terminal-body .info { color: var(--text-muted); }
+    .terminal-body .link { color: var(--cyan); }
+    .terminal-body .arg { color: var(--yellow); }
+
+    @keyframes termFadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .terminal-body .line:nth-child(1) { animation-delay: 0.1s; }
+    .terminal-body .line:nth-child(2) { animation-delay: 0.35s; }
+    .terminal-body .line:nth-child(3) { animation-delay: 0.6s; }
+    .terminal-body .line:nth-child(4) { animation-delay: 1.0s; }
+    .terminal-body .line:nth-child(5) { animation-delay: 1.25s; }
+    .terminal-body .line:nth-child(6) { animation-delay: 1.65s; }
+    .terminal-body .line:nth-child(7) { animation-delay: 2.0s; }
+    .terminal-body .line:nth-child(8) { animation-delay: 2.35s; }
+    .terminal-body .line:nth-child(9) { animation-delay: 2.75s; }
+    .terminal-body .line:nth-child(10) { animation-delay: 3.0s; }
+    .terminal-body .line:nth-child(11) { animation-delay: 3.25s; }
+    .terminal-body .line:nth-child(12) { animation-delay: 3.65s; }
+    .terminal-body .line:nth-child(13) { animation-delay: 3.9s; }
+    .terminal-body .line:nth-child(14) { animation-delay: 4.15s; }
+    .terminal-body .line:nth-child(15) { animation-delay: 4.4s; }
+    .terminal-body .line:nth-child(16) { animation-delay: 4.65s; }
+    .terminal-body .line:nth-child(17) { animation-delay: 4.9s; }
+
+    /* ── Section shared ── */
+    .section-label {
+      text-align: center;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .section-heading {
+      text-align: center;
+      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      text-align: center;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 56px;
+      font-size: 1.05rem;
+    }
+
+    /* ── Features Grid ── */
+    .features {
+      padding: 100px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .feature-card {
+      background: var(--bg);
+      padding: 36px 32px;
+      transition: background 0.3s;
+    }
+
+    .feature-card:hover {
+      background: var(--bg-subtle);
+    }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: var(--accent);
+    }
+
+    .feature-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── How It Works ── */
+    .how-it-works {
+      padding: 100px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+    }
+
+    .step {
+      position: relative;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      text-align: center;
+      transition: border-color 0.3s;
+    }
+
+    .step:hover {
+      border-color: var(--accent);
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .step code {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 12px;
+      text-align: left;
+      white-space: nowrap;
+      overflow-x: auto;
+    }
+
+    .step code .prompt-sym { color: var(--accent); }
+    .step code .cmd-text { color: var(--text); }
+
+    .step-connector {
+      display: none;
+    }
+
+    /* ── Stats ── */
+    .stats {
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, var(--text), var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── Install CTA ── */
+    .install-section {
+      padding: 100px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .install-section .install-block {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .install-section h2 {
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+
+    .install-section .install-sub {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      font-size: 0.9375rem;
+    }
+
+    .install-cmd {
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px 4px 4px 20px;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .install-cmd code {
+      flex: 1;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-align: left;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .install-cmd code .prompt { color: var(--accent); }
+
+    .install-cmd .copy-btn {
+      background: var(--accent);
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .install-cmd .copy-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .install-platforms {
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 40px 0;
+    }
+
+    footer .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    footer .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    footer .footer-logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: 0.9375rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    footer .footer-logo span {
+      color: var(--accent);
+    }
+
+    footer .footer-text {
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+    }
+
+    footer .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    footer .footer-links a {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    footer .footer-links a:hover {
+      color: var(--text);
+    }
+
+    /* ── Scroll Animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      nav .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .hero {
+        padding: 130px 0 60px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 32px;
+      }
+
+      .install-section .install-block {
+        padding: 32px 20px;
+      }
+
+      footer .container {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      footer .footer-left {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ── -->
+  <nav>
+    <div class="container">
+      <a href="#" class="logo"><span>&gt;</span> devpod</a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#install">Install</a></li>
+        <li><a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+      <a href="#install" class="nav-cta">Get Started</a>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge">
+        <span class="dot"></span>
+        6.6MB binary &middot; 20ms startup &middot; zero dependencies
+      </div>
+      <h1>
+        Ship code without<br><span class="gradient">learning git.</span>
+      </h1>
+      <p class="subtitle">
+        Stacked diffs. Local CI. VS&nbsp;Code&#8209;quality diff viewer.<br>
+        Four commands to replace your entire git workflow.
+      </p>
+      <div class="install-box">
+        <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</code>
+        <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh">Copy</button>
+      </div>
+      <div class="hero-buttons">
+        <a href="#install" class="btn btn-primary">
+          Get Started
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
+        </a>
+        <a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.38c.6.12.83-.26.83-.57L9 20.85c-3.43.75-4.15-1.65-4.15-1.65-.55-1.41-1.35-1.78-1.35-1.78-1.1-.76.09-.74.09-.74 1.22.09 1.87 1.25 1.87 1.25 1.08 1.86 2.84 1.32 3.53 1.01.11-.78.42-1.32.77-1.62-2.74-.31-5.62-1.37-5.62-6.1 0-1.35.48-2.45 1.27-3.31-.13-.31-.55-1.57.12-3.26 0 0 1.03-.33 3.38 1.26a11.74 11.74 0 0 1 6.16 0c2.34-1.6 3.37-1.26 3.37-1.26.67 1.69.25 2.95.12 3.26.8.86 1.27 1.96 1.27 3.31 0 4.74-2.89 5.79-5.64 6.09.44.38.84 1.13.84 2.28l-.01 3.38c0 .31.22.69.84.57A12 12 0 0 0 12 .3"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Demo Terminal ── -->
+  <section class="demo">
+    <div class="container">
+      <div class="terminal reveal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">devpod &mdash; Terminal</span>
+          <div style="width:36px"></div>
+        </div>
+        <div class="terminal-body">
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod feature</span> <span class="arg">"user authentication"</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Started feat: user authentication</span></div>
+          <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Created D1: feat(auth): add API endpoints</span> <span class="info">(+200, 3 files)</span></div>
+          <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Created D2: feat(auth): add login form</span> <span class="info">(+150, 2 files)</span></div>
+          <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod submit</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Submitted 2 diffs</span></div>
+          <div class="line">  <span class="info">Review:</span>  <span class="link">http://localhost:3000/diffs/user-authentication</span></div>
+          <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod land</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Landed D1: feat(auth): add API endpoints</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Landed D2: feat(auth): add login form</span></div>
+          <div class="line">  <span class="success">Feature complete!</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Features ── -->
+  <section class="features" id="features">
+    <div class="container">
+      <p class="section-label reveal">Features</p>
+      <h2 class="section-heading reveal">Everything you need to ship.</h2>
+      <p class="section-sub reveal">Four verbs replace your entire workflow. No branches, no rebasing, no merge conflicts you didn't cause.</p>
+      <div class="features-grid reveal">
+        <!-- 1 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 17.25V6.75A2.25 2.25 0 0 0 18.75 4.5H5.25A2.25 2.25 0 0 0 3 6.75v10.5A2.25 2.25 0 0 0 5.25 20.25Z"/></svg>
+          </div>
+          <h3>No Git Required</h3>
+          <p>Start features, save diffs, sync, ship. No branches, commits, rebases, or push/pull in your vocabulary.</p>
+        </div>
+        <!-- 2 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L12 12.75 6.429 9.75m11.142 0 4.179 2.25L12 17.25 2.25 12l4.179-2.25m11.142 0 4.179 2.25L12 21.75l-9.75-5.25 4.179-2.25"/></svg>
+          </div>
+          <h3>Stacked Diffs</h3>
+          <p>Break features into small reviewable pieces. Edit any diff in the stack &mdash; the rest rebase automatically.</p>
+        </div>
+        <!-- 3 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>
+          </div>
+          <h3>Local CI Runner</h3>
+          <p>Run your .github/workflows/ locally. Same YAML, same actions, same results. No pushing to test.</p>
+        </div>
+        <!-- 4 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
+          </div>
+          <h3>VS Code Diff Viewer</h3>
+          <p>Monaco Editor in the browser. Syntax highlighting, side-by-side, dark and light themes.</p>
+        </div>
+        <!-- 5 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+          </div>
+          <h3>Version History</h3>
+          <p>Every change is a snapshot. Compare any version of any diff. True interdiff between review rounds.</p>
+        </div>
+        <!-- 6 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>
+          </div>
+          <h3>One Binary</h3>
+          <p>6.6MB Go binary. 20ms startup. No Node.js, no Docker, no dependencies. Works offline.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── How It Works ── -->
+  <section class="how-it-works" id="how-it-works">
+    <div class="container">
+      <p class="section-label reveal">Workflow</p>
+      <h2 class="section-heading reveal">Four steps. That's the whole workflow.</h2>
+      <p class="section-sub reveal">Clone, work, review, ship. No branching strategy to memorize.</p>
+      <div class="steps reveal">
+        <div class="step">
+          <div class="step-number">1</div>
+          <h3>Clone</h3>
+          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod clone myorg/myrepo</span></code>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <h3>Work</h3>
+          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod feature "auth"</span>
+<span class="prompt-sym">$</span> <span class="cmd-text">devpod diff</span></code>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <h3>Review</h3>
+          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod submit</span></code>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <h3>Ship</h3>
+          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod land</span></code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Stats ── -->
+  <section class="stats">
+    <div class="container">
+      <div class="stats-grid reveal">
+        <div>
+          <div class="stat-value">6.6MB</div>
+          <div class="stat-label">Single binary size</div>
+        </div>
+        <div>
+          <div class="stat-value">20ms</div>
+          <div class="stat-label">Cold start</div>
+        </div>
+        <div>
+          <div class="stat-value">0</div>
+          <div class="stat-label">Dependencies</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Install ── -->
+  <section class="install-section" id="install">
+    <div class="container">
+      <div class="install-block reveal">
+        <h2>Install in 10 seconds</h2>
+        <p class="install-sub">One command. No package manager required.</p>
+        <div class="install-cmd">
+          <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</code>
+          <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh">Copy</button>
+        </div>
+        <p class="install-platforms">Works on macOS (Apple Silicon &amp; Intel) and Linux (x86_64 &amp; ARM64).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <div class="container">
+      <div class="footer-left">
+        <a href="#" class="footer-logo"><span>&gt;</span> devpod</a>
+        <span class="footer-text">Open source &middot; MIT License</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/elloloop/devpod/issues" target="_blank" rel="noopener">Issues</a>
+        <a href="https://github.com/elloloop/devpod/blob/main/install.sh" target="_blank" rel="noopener">Install Script</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Copy to clipboard
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var text = this.getAttribute('data-copy');
+        navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = 'Copied!';
+          setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+        });
+      });
+    });
+
+    // Scroll reveal
+    var reveals = document.querySelectorAll('.reveal');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    reveals.forEach(function(el) { observer.observe(el); });
+  </script>
+
+</body>
+</html>
