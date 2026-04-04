@@ -1,0 +1,71 @@
+/*
+ * DevPod Theme Variables — CSS defaults.
+ * These are overridden at runtime by theme.js, but provide
+ * a flash-free default (Linear Dark) for the initial paint.
+ */
+
+:root {
+  /* Backgrounds */
+  --dp-bg: #0a0a0b;
+  --dp-bg-secondary: #111113;
+  --dp-bg-tertiary: #18181b;
+  --dp-bg-hover: #1c1c1f;
+  --dp-bg-active: #27272a;
+
+  /* Borders */
+  --dp-border: #27272a;
+  --dp-border-subtle: #1e1e22;
+
+  /* Text */
+  --dp-text: #e4e4e7;
+  --dp-text-secondary: #a1a1aa;
+  --dp-text-tertiary: #52525b;
+
+  /* Accent */
+  --dp-accent: #818cf8;
+  --dp-accent-hover: #a5b4fc;
+
+  /* Status */
+  --dp-success: #34d399;
+  --dp-error: #f87171;
+  --dp-warning: #fbbf24;
+  --dp-info: #60a5fa;
+
+  /* Code / Diff */
+  --dp-gutter-bg: #0f0f11;
+  --dp-gutter-text: #3f3f46;
+  --dp-diff-add-bg: #052e16;
+  --dp-diff-add-gutter: #064e3b;
+  --dp-diff-del-bg: #2c0b0e;
+  --dp-diff-del-gutter: #450a0a;
+  --dp-diff-hunk-bg: #0c0a1e;
+  --dp-diff-hunk-text: #818cf8;
+
+  /* Syntax */
+  --dp-syntax-keyword: #c084fc;
+  --dp-syntax-string: #86efac;
+  --dp-syntax-comment: #52525b;
+  --dp-syntax-function: #93c5fd;
+  --dp-syntax-number: #fda4af;
+
+  /* Status bar */
+  --dp-statusbar: #818cf8;
+  --dp-statusbar-text: #ffffff;
+
+  /* Monaco theme name (read by JS, not a CSS render property) */
+  --dp-monaco-theme: 'vs-dark';
+}
+
+/* ── Retro Peppy overrides (structural) ──
+   Applied when data-dp-scheme="retro" is on <html>. */
+
+[data-dp-scheme="retro"] {
+  --dp-border-width: 2px;
+  --dp-radius: 8px;
+}
+
+/* Default non-retro values */
+:root {
+  --dp-border-width: 1px;
+  --dp-radius: 4px;
+}

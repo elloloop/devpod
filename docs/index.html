@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme-vars.css">
   <style>
     *, *::before, *::after {
       margin: 0;
@@ -16,23 +17,23 @@
     }
 
     :root {
-      --bg: #09090b;
-      --bg-elevated: #18181b;
-      --bg-subtle: #111113;
-      --bg-card: #0f0f12;
-      --text: #e4e4e7;
-      --text-muted: #a1a1aa;
-      --text-dim: #71717a;
-      --accent: #6366f1;
-      --accent-hover: #818cf8;
-      --accent-subtle: rgba(99, 102, 241, 0.08);
-      --accent-border: rgba(99, 102, 241, 0.2);
-      --green: #22c55e;
-      --yellow: #eab308;
-      --cyan: #06b6d4;
-      --purple: #a78bfa;
-      --border: #1e1e22;
-      --border-hover: #2e2e34;
+      --bg: var(--dp-bg);
+      --bg-elevated: var(--dp-bg-tertiary);
+      --bg-subtle: var(--dp-bg-secondary);
+      --bg-card: var(--dp-bg-secondary);
+      --text: var(--dp-text);
+      --text-muted: var(--dp-text-secondary);
+      --text-dim: var(--dp-text-tertiary);
+      --accent: var(--dp-accent);
+      --accent-hover: var(--dp-accent-hover);
+      --accent-subtle: color-mix(in srgb, var(--dp-accent) 8%, transparent);
+      --accent-border: color-mix(in srgb, var(--dp-accent) 20%, transparent);
+      --green: var(--dp-success);
+      --yellow: var(--dp-warning);
+      --cyan: var(--dp-info);
+      --purple: var(--dp-accent-hover);
+      --border: var(--dp-border-subtle);
+      --border-hover: var(--dp-border);
       --max-w: 1140px;
     }
 
@@ -67,7 +68,7 @@
       left: 0;
       right: 0;
       z-index: 100;
-      background: rgba(9, 9, 11, 0.82);
+      background: color-mix(in srgb, var(--dp-bg) 82%, transparent);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
@@ -112,7 +113,7 @@
       align-items: center;
       gap: 6px;
       background: var(--accent);
-      color: #fff;
+      color: var(--dp-statusbar-text);
       font-size: 0.875rem;
       font-weight: 600;
       padding: 8px 18px;
@@ -138,7 +139,7 @@
       transform: translateX(-50%);
       width: 1000px;
       height: 700px;
-      background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.07) 0%, rgba(167, 139, 250, 0.03) 40%, transparent 70%);
+      background: radial-gradient(ellipse at center, color-mix(in srgb, var(--dp-accent) 7%, transparent) 0%, color-mix(in srgb, var(--dp-accent-hover) 3%, transparent) 40%, transparent 70%);
       pointer-events: none;
     }
 
@@ -214,7 +215,7 @@
       max-width: 100%;
       overflow-x: auto;
       position: relative;
-      box-shadow: 0 0 40px rgba(99, 102, 241, 0.08), 0 0 80px rgba(99, 102, 241, 0.04);
+      box-shadow: 0 0 40px color-mix(in srgb, var(--dp-accent) 8%, transparent), 0 0 80px color-mix(in srgb, var(--dp-accent) 4%, transparent);
     }
 
     .install-highlight .install-box code {
@@ -228,7 +229,7 @@
     .install-highlight .install-box .copy-btn {
       background: var(--accent);
       border: none;
-      color: #fff;
+      color: var(--dp-statusbar-text);
       padding: 12px 20px;
       border-radius: 10px;
       font-size: 0.8125rem;
@@ -272,7 +273,7 @@
 
     .btn-primary {
       background: var(--accent);
-      color: #fff;
+      color: var(--dp-statusbar-text);
     }
 
     .btn-primary:hover {
@@ -308,7 +309,7 @@
       overflow: hidden;
       max-width: 780px;
       margin: 0 auto;
-      box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 60px rgba(99, 102, 241, 0.06);
+      box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 60px color-mix(in srgb, var(--dp-accent) 6%, transparent);
       position: relative;
     }
 
@@ -317,7 +318,7 @@
       position: absolute;
       inset: -1px;
       border-radius: 17px;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), transparent 40%, transparent 60%, rgba(167, 139, 250, 0.1));
+      background: linear-gradient(135deg, color-mix(in srgb, var(--dp-accent) 15%, transparent), transparent 40%, transparent 60%, color-mix(in srgb, var(--dp-accent-hover) 10%, transparent));
       pointer-events: none;
       z-index: 0;
     }
@@ -327,7 +328,7 @@
       align-items: center;
       gap: 8px;
       padding: 14px 18px;
-      background: rgba(39, 39, 42, 0.5);
+      background: color-mix(in srgb, var(--dp-bg-active) 50%, transparent);
       border-bottom: 1px solid var(--border);
       position: relative;
       z-index: 1;
@@ -793,7 +794,7 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: rgba(99, 102, 241, 0.15);
+      background: color-mix(in srgb, var(--dp-accent) 15%, transparent);
       color: var(--accent);
       font-size: 0.8125rem;
       font-weight: 700;
@@ -903,7 +904,7 @@
       padding: 4px 4px 4px 20px;
       gap: 12px;
       margin-bottom: 20px;
-      box-shadow: 0 0 30px rgba(99, 102, 241, 0.06);
+      box-shadow: 0 0 30px color-mix(in srgb, var(--dp-accent) 6%, transparent);
     }
 
     .install-cmd code {
@@ -920,7 +921,7 @@
     .install-cmd .copy-btn {
       background: var(--accent);
       border: none;
-      color: #fff;
+      color: var(--dp-statusbar-text);
       padding: 12px 20px;
       border-radius: 9px;
       font-size: 0.8125rem;
@@ -1080,7 +1081,10 @@
         <li><a href="guide.html">Docs</a></li>
         <li><a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a></li>
       </ul>
-      <a href="#install" class="nav-cta">Get Started</a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div id="dp-landing-picker"></div>
+        <a href="#install" class="nav-cta">Get Started</a>
+      </div>
     </div>
   </nav>
 
@@ -1491,6 +1495,9 @@
 
     reveals.forEach(function(el) { observer.observe(el); });
   </script>
+
+  <script src="theme.js"></script>
+  <script>DevpodTheme.mountPicker('dp-landing-picker');</script>
 
 </body>
 </html>

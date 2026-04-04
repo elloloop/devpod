@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>devpod — Themes</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme-vars.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--dp-bg-secondary);
+  color: var(--dp-text);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ── Top bar ── */
+.topnav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: color-mix(in srgb, var(--dp-bg) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+  flex-wrap: wrap;
+}
+
+.topnav .logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--dp-text);
+  text-decoration: none;
+}
+
+.topnav .logo span { color: var(--dp-accent); }
+
+.topnav .sep {
+  color: var(--dp-text-tertiary);
+  font-size: 12px;
+}
+
+.topnav .page-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--dp-text-secondary);
+}
+
+.topnav .picker-area {
+  margin-left: auto;
+}
+
+.topnav .nav-links {
+  display: flex;
+  gap: 12px;
+  list-style: none;
+  font-size: 12px;
+}
+
+.topnav .nav-links a {
+  color: var(--dp-text-secondary);
+  text-decoration: none;
+}
+
+.topnav .nav-links a:hover {
+  color: var(--dp-text);
+}
+
+/* ── Preview container ── */
+.preview {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+h2 {
+  font-size: 14px;
+  color: var(--dp-text-tertiary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Mock dashboard ── */
+.dashboard {
+  border-radius: var(--dp-radius, 4px);
+  overflow: hidden;
+  border: var(--dp-border-width, 1px) solid var(--dp-border);
+  background: var(--dp-bg);
+}
+
+.topbar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  background: var(--dp-bg-secondary);
+  border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sidebar {
+  width: 200px;
+  background: var(--dp-bg-secondary);
+  border-right: var(--dp-border-width, 1px) solid var(--dp-border);
+  padding: 8px 0;
+}
+
+.sidebar-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-item.active {
+  background: var(--dp-bg-active);
+  color: var(--dp-accent);
+}
+
+.sidebar-item:hover:not(.active) {
+  background: var(--dp-bg-hover);
+}
+
+.main { flex: 1; display: flex; flex-direction: column; }
+.content { display: flex; flex: 1; }
+
+.diff-header {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+  background: var(--dp-bg-tertiary);
+  border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+  font-size: 12px;
+}
+
+.stack-nav {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 4px;
+  border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.stack-item { padding: 1px 6px; border-radius: 3px; }
+.stack-item.current { background: var(--dp-bg-active); color: var(--dp-text); }
+
+.file-tabs {
+  height: 35px;
+  display: flex;
+  align-items: center;
+  background: var(--dp-bg-secondary);
+  border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+}
+
+.file-tab {
+  padding: 0 14px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  border-right: var(--dp-border-width, 1px) solid var(--dp-border);
+}
+
+.file-tab.active {
+  background: var(--dp-bg);
+  color: var(--dp-text);
+  border-bottom: 1px solid var(--dp-bg);
+  margin-bottom: -1px;
+}
+
+.code-area {
+  flex: 1;
+  min-height: 300px;
+  background: var(--dp-bg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 20px;
+  overflow: hidden;
+}
+
+.code-line { display: flex; }
+
+.gutter {
+  width: 50px;
+  text-align: right;
+  padding: 0 8px;
+  color: var(--dp-gutter-text);
+  background: var(--dp-gutter-bg);
+  border-right: var(--dp-border-width, 1px) solid var(--dp-border);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.code-content { padding: 0 12px; white-space: pre; flex: 1; }
+
+.line-add { background: var(--dp-diff-add-bg); }
+.line-add .gutter { background: var(--dp-diff-add-gutter); color: var(--dp-success); }
+.line-add .code-content .plus { color: var(--dp-success); }
+
+.line-del { background: var(--dp-diff-del-bg); }
+.line-del .gutter { background: var(--dp-diff-del-gutter); color: var(--dp-error); }
+.line-del .code-content .minus { color: var(--dp-error); }
+
+.line-hunk { background: var(--dp-diff-hunk-bg); }
+.line-hunk .code-content { color: var(--dp-diff-hunk-text); padding: 2px 12px; }
+
+.keyword { color: var(--dp-syntax-keyword); }
+.string { color: var(--dp-syntax-string); }
+.comment { color: var(--dp-syntax-comment); font-style: italic; }
+.func { color: var(--dp-syntax-function); }
+.number { color: var(--dp-syntax-number); }
+
+.statusbar {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 12px;
+  background: var(--dp-statusbar);
+  color: var(--dp-statusbar-text);
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.badge {
+  padding: 1px 6px;
+  border-radius: var(--dp-radius, 4px);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: color-mix(in srgb, var(--dp-success) 20%, transparent);
+  color: var(--dp-success);
+}
+
+.badge-info {
+  background: color-mix(in srgb, var(--dp-accent) 20%, transparent);
+  color: var(--dp-accent);
+}
+
+.badge-muted {
+  background: var(--dp-bg-tertiary);
+  color: var(--dp-text-tertiary);
+}
+
+/* ── Feature list mock ── */
+.feature-list { padding: 12px; }
+
+.feature-row {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--dp-radius, 4px);
+  font-size: 12px;
+  gap: 8px;
+}
+
+.feature-row:hover { background: var(--dp-bg-hover); }
+.feature-name { font-weight: 600; }
+
+.diff-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  width: 24px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .topnav { padding: 10px 12px; }
+  .preview { padding: 20px 12px; }
+  .dp-picker-label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Top navigation -->
+<div class="topnav">
+  <a href="index.html" class="logo"><span>&gt;</span> devpod</a>
+  <span class="sep">/</span>
+  <span class="page-title">Themes</span>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="guide.html">Docs</a></li>
+  </ul>
+  <div class="picker-area" id="dp-themes-picker"></div>
+</div>
+
+<div class="preview">
+  <h2 style="margin-bottom:24px">Diff Review Page</h2>
+
+  <div class="dashboard" style="height:520px;display:flex;flex-direction:column">
+    <div class="diff-header">
+      <span style="color:var(--dp-text-secondary)">&larr; user-auth</span>
+      <span style="color:var(--dp-text-tertiary)">&rsaquo;</span>
+      <span style="color:var(--dp-accent);font-weight:700">D2</span>
+      <span style="color:var(--dp-text-tertiary)">&middot;</span>
+      <span>feat(auth): add login form component</span>
+      <span style="margin-left:auto;color:var(--dp-success)">+47</span>
+      <span style="color:var(--dp-error)">-3</span>
+      <span style="color:var(--dp-text-tertiary)">&middot;</span>
+      <span class="badge badge-success">approved</span>
+    </div>
+    <div class="stack-nav">
+      <span class="stack-item" style="color:var(--dp-success)">D1&#10003;</span>
+      <span style="color:var(--dp-text-tertiary)">&rarr;</span>
+      <span class="stack-item current">D2&#10003;</span>
+      <span style="color:var(--dp-text-tertiary)">&rarr;</span>
+      <span class="stack-item" style="color:var(--dp-text-tertiary)">D3&#9675;</span>
+      <span style="margin-left:auto;color:var(--dp-text-tertiary);font-size:10px">n/p diffs &middot; j/k files</span>
+    </div>
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div class="sidebar" style="width:180px">
+        <div style="padding:6px 12px;font-size:10px;font-weight:600;color:var(--dp-text-tertiary);text-transform:uppercase">Files (2)</div>
+        <div class="sidebar-item active"><span>&#128994;</span><span>LoginForm.tsx</span><span style="margin-left:auto;font-size:10px;color:var(--dp-success)">+42</span></div>
+        <div class="sidebar-item"><span>&#128993;</span><span>auth.ts</span><span style="margin-left:auto;font-size:10px;color:var(--dp-success)">+5</span><span style="font-size:10px;color:var(--dp-error)">-3</span></div>
+      </div>
+      <div class="main">
+        <div class="file-tabs">
+          <div class="file-tab active"><span style="font-size:9px;margin-right:4px">&#128994;</span>LoginForm.tsx</div>
+          <div class="file-tab" style="color:var(--dp-text-tertiary)"><span style="font-size:9px;margin-right:4px">&#128993;</span>auth.ts</div>
+        </div>
+        <div class="code-area">
+          <div class="code-line line-hunk"><div class="gutter"></div><div class="code-content">@@ -0,0 +1,42 @@</div></div>
+          <div class="code-line line-add"><div class="gutter">1</div><div class="code-content"><span class="plus">+</span><span class="keyword">import</span> { useState } <span class="keyword">from</span> <span class="string">"react"</span>;</div></div>
+          <div class="code-line line-add"><div class="gutter">2</div><div class="code-content"><span class="plus">+</span><span class="keyword">import</span> { Button } <span class="keyword">from</span> <span class="string">"@/ui/button"</span>;</div></div>
+          <div class="code-line line-add"><div class="gutter">3</div><div class="code-content"><span class="plus">+</span></div></div>
+          <div class="code-line line-add"><div class="gutter">4</div><div class="code-content"><span class="plus">+</span><span class="keyword">interface</span> <span class="func">LoginFormProps</span> {</div></div>
+          <div class="code-line line-add"><div class="gutter">5</div><div class="code-content"><span class="plus">+</span>  onSubmit: (email: <span class="keyword">string</span>, pass: <span class="keyword">string</span>) =&gt; <span class="keyword">void</span>;</div></div>
+          <div class="code-line line-add"><div class="gutter">6</div><div class="code-content"><span class="plus">+</span>}</div></div>
+          <div class="code-line line-add"><div class="gutter">7</div><div class="code-content"><span class="plus">+</span></div></div>
+          <div class="code-line line-add"><div class="gutter">8</div><div class="code-content"><span class="plus">+</span><span class="keyword">export function</span> <span class="func">LoginForm</span>({ onSubmit }: LoginFormProps) {</div></div>
+          <div class="code-line line-add"><div class="gutter">9</div><div class="code-content"><span class="plus">+</span>  <span class="keyword">const</span> [email, setEmail] = <span class="func">useState</span>(<span class="string">""</span>);</div></div>
+          <div class="code-line line-add"><div class="gutter">10</div><div class="code-content"><span class="plus">+</span>  <span class="keyword">const</span> [password, setPassword] = <span class="func">useState</span>(<span class="string">""</span>);</div></div>
+          <div class="code-line line-add"><div class="gutter">11</div><div class="code-content"><span class="plus">+</span>  <span class="keyword">const</span> [loading, setLoading] = <span class="func">useState</span>(<span class="keyword">false</span>);</div></div>
+          <div class="code-line line-add"><div class="gutter">12</div><div class="code-content"><span class="plus">+</span></div></div>
+          <div class="code-line line-add"><div class="gutter">13</div><div class="code-content"><span class="plus">+</span>  <span class="keyword">const</span> <span class="func">handleSubmit</span> = <span class="keyword">async</span> () =&gt; {</div></div>
+          <div class="code-line line-add"><div class="gutter">14</div><div class="code-content"><span class="plus">+</span>    <span class="func">setLoading</span>(<span class="keyword">true</span>);</div></div>
+          <div class="code-line line-add"><div class="gutter">15</div><div class="code-content"><span class="plus">+</span>    <span class="keyword">await</span> <span class="func">onSubmit</span>(email, password);</div></div>
+          <div class="code-line line-add"><div class="gutter">16</div><div class="code-content"><span class="plus">+</span>    <span class="func">setLoading</span>(<span class="keyword">false</span>);</div></div>
+          <div class="code-line line-add"><div class="gutter">17</div><div class="code-content"><span class="plus">+</span>  };</div></div>
+          <div class="code-line line-add"><div class="gutter">18</div><div class="code-content"><span class="plus">+</span></div></div>
+          <div class="code-line line-add"><div class="gutter">19</div><div class="code-content"><span class="plus">+</span>  <span class="comment">// Fun fact: this login form was themed with Retro Peppy</span></div></div>
+          <div class="code-line line-add"><div class="gutter">20</div><div class="code-content"><span class="plus">+</span>  <span class="keyword">return</span> (</div></div>
+          <div class="code-line line-add"><div class="gutter">21</div><div class="code-content"><span class="plus">+</span>    &lt;form onSubmit={handleSubmit}&gt;</div></div>
+          <div class="code-line line-add"><div class="gutter">22</div><div class="code-content"><span class="plus">+</span>      &lt;input value={email} onChange={e =&gt; setEmail(e.target.value)} /&gt;</div></div>
+          <div class="code-line line-add"><div class="gutter">23</div><div class="code-content"><span class="plus">+</span>      &lt;input <span class="keyword">type</span>=<span class="string">"password"</span> value={password} /&gt;</div></div>
+          <div class="code-line line-add"><div class="gutter">24</div><div class="code-content"><span class="plus">+</span>      &lt;Button loading={loading}&gt;Sign in&lt;/Button&gt;</div></div>
+          <div class="code-line line-add"><div class="gutter">25</div><div class="code-content"><span class="plus">+</span>    &lt;/form&gt;</div></div>
+          <div class="code-line line-add"><div class="gutter">26</div><div class="code-content"><span class="plus">+</span>  );</div></div>
+          <div class="code-line line-add"><div class="gutter">27</div><div class="code-content"><span class="plus">+</span>}</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="statusbar">
+      <span>user-auth</span>
+      <span>D2 of 3</span>
+      <span>LoginForm.tsx</span>
+      <span style="margin-left:auto">+47 -3</span>
+      <span>approved</span>
+    </div>
+  </div>
+
+  <h2 style="margin-top:48px;margin-bottom:24px">Feature List</h2>
+  <div class="dashboard" style="padding:0">
+    <div class="topbar"><span style="color:var(--dp-text)">devpod</span><span style="color:var(--dp-text-tertiary);font-weight:400;font-size:12px;margin-left:8px">/ platform</span></div>
+    <div class="feature-list">
+      <div class="feature-row"><span class="diff-label" style="color:var(--dp-accent)">&#9679;</span><span class="feature-name">user authentication</span><span class="badge badge-info" style="margin-left:4px">feat</span><span style="margin-left:auto;font-size:11px;font-family:'JetBrains Mono',monospace"><span style="color:var(--dp-success)">D1&#10003;</span> <span style="color:var(--dp-accent)">D2&#9681;</span> <span style="color:var(--dp-text-tertiary)">D3&#9675;</span></span></div>
+      <div class="feature-row"><span class="diff-label" style="color:var(--dp-text-tertiary)">&#9675;</span><span class="feature-name">search redesign</span><span class="badge badge-info" style="margin-left:4px">feat</span><span style="margin-left:auto;font-size:11px;font-family:'JetBrains Mono',monospace"><span style="color:var(--dp-text-tertiary)">D1&#9675;</span></span></div>
+      <div class="feature-row"><span class="diff-label" style="color:var(--dp-text-tertiary)">&#9675;</span><span class="feature-name">fix token refresh</span><span class="badge badge-muted" style="margin-left:4px">fix</span><span style="margin-left:auto;font-size:11px;font-family:'JetBrains Mono',monospace"><span style="color:var(--dp-success)">D1&#10003;</span> <span style="color:var(--dp-error)">D2&#10007;</span></span></div>
+    </div>
+  </div>
+</div>
+
+<script src="theme.js"></script>
+<script>DevpodTheme.mountPicker('dp-themes-picker');</script>
+</body>
+</html>

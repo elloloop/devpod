@@ -10,97 +10,66 @@ import type { DiffFile } from "@/lib/types";
 
 const DiffEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.DiffEditor), { ssr: false });
 
-// ── Types ──
-
-type ColorMode = "light" | "dark" | "system";
-type ResolvedTheme = "light" | "dark";
-
-interface Theme {
-  bg: string;
-  bgSecondary: string;
-  bgTertiary: string;
-  bgHover: string;
-  bgActive: string;
-  border: string;
-  text: string;
-  textSecondary: string;
-  textTertiary: string;
-  accent: string;
-  success: string;
-  error: string;
-  info: string;
-  monacoTheme: string;
-  statusBar: string;
-  statusBarText: string;
-}
-
-const THEMES: Record<ResolvedTheme, Theme> = {
-  dark: {
-    bg: "#1e1e1e",
-    bgSecondary: "#252526",
-    bgTertiary: "#2d2d2d",
-    bgHover: "#2a2d2e",
-    bgActive: "#37373d",
-    border: "#3c3c3c",
-    text: "#cccccc",
-    textSecondary: "#969696",
-    textTertiary: "#5a5a5a",
-    accent: "#0078d4",
-    success: "#89d185",
-    error: "#f48771",
-    info: "#75beff",
-    monacoTheme: "vs-dark",
-    statusBar: "#007acc",
-    statusBarText: "#ffffff",
-  },
-  light: {
-    bg: "#ffffff",
-    bgSecondary: "#f3f3f3",
-    bgTertiary: "#e8e8e8",
-    bgHover: "#e8e8e8",
-    bgActive: "#d6d6d6",
-    border: "#e5e5e5",
-    text: "#333333",
-    textSecondary: "#616161",
-    textTertiary: "#a0a0a0",
-    accent: "#0078d4",
-    success: "#388a34",
-    error: "#cd3131",
-    info: "#0066bf",
-    monacoTheme: "light",
-    statusBar: "#0078d4",
-    statusBarText: "#ffffff",
-  },
-};
-
 // ── Helpers ──
 
-function useColorMode(): [ResolvedTheme, ColorMode, (m: ColorMode) => void] {
-  const [mode, setModeState] = useState<ColorMode>("system");
-  const [resolved, setResolved] = useState<ResolvedTheme>("dark");
+/**
+ * Read the current Monaco theme from the CSS variable set by theme.js.
+ * Falls back to "vs-dark" on SSR / initial render.
+ */
+function useMonacoTheme(): string {
+  const [theme, setTheme] = useState("vs-dark");
 
   useEffect(() => {
-    const saved = localStorage.getItem("devpod-color-mode") as ColorMode | null;
-    if (saved) setModeState(saved);
-  }, []);
-
-  useEffect(() => {
-    if (mode === "system") {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      setResolved(mq.matches ? "dark" : "light");
-      const handler = (e: MediaQueryListEvent) => setResolved(e.matches ? "dark" : "light");
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
+    function read() {
+      const raw = getComputedStyle(document.documentElement)
+        .getPropertyValue("--dp-monaco-theme")
+        .trim()
+        .replace(/['"]/g, "");
+      if (raw) setTheme(raw);
     }
-    setResolved(mode as ResolvedTheme);
-  }, [mode]);
-
-  const setMode = useCallback((m: ColorMode) => {
-    setModeState(m);
-    localStorage.setItem("devpod-color-mode", m);
+    read();
+    // Listen for theme changes dispatched by theme.js
+    window.addEventListener("devpod-theme-change", read);
+    return () => window.removeEventListener("devpod-theme-change", read);
   }, []);
 
-  return [resolved, mode, setMode];
+  return theme;
+}
+
+/**
+ * Provide mode / scheme controls that delegate to the global DevpodTheme API
+ * loaded via theme.js (in layout.tsx <Script>).
+ */
+function useDevpodTheme() {
+  const [mode, setModeState] = useState("dark");
+  const [scheme, setSchemeState] = useState("linear");
+
+  useEffect(() => {
+    function sync() {
+      const w = window as unknown as { DevpodTheme?: { getMode: () => string; getScheme: () => string } };
+      if (w.DevpodTheme) {
+        setModeState(w.DevpodTheme.getMode());
+        setSchemeState(w.DevpodTheme.getScheme());
+      }
+    }
+    sync();
+    window.addEventListener("devpod-theme-change", sync);
+    return () => window.removeEventListener("devpod-theme-change", sync);
+  }, []);
+
+  const setMode = useCallback((m: string) => {
+    const w = window as unknown as { DevpodTheme?: { setMode: (m: string) => void } };
+    if (w.DevpodTheme) w.DevpodTheme.setMode(m);
+    setModeState(m);
+  }, []);
+
+  const setScheme = useCallback((s: string) => {
+    const w = window as unknown as { DevpodTheme?: { setScheme: (s: string) => void } };
+    if (w.DevpodTheme) w.DevpodTheme.setScheme(s);
+    setSchemeState(s);
+  }, []);
+
+  return { mode, scheme, setMode, setScheme };
 }
 
 async function fetchDiff(slug: string, position: number) {
@@ -133,9 +102,9 @@ function getLang(path: string): string {
 }
 
 function fileIcon(status: string): string {
-  if (status === "added") return "🟢";
-  if (status === "deleted") return "🔴";
-  return "🟡";
+  if (status === "added") return "\uD83D\uDFE2";
+  if (status === "deleted") return "\uD83D\uDD34";
+  return "\uD83D\uDFE1";
 }
 
 // ── SVG Icons (inline, no deps) ──
@@ -152,14 +121,24 @@ function MonitorIcon() {
   return <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M1.5 2A1.5 1.5 0 000 3.5v7A1.5 1.5 0 001.5 12H6v1.5H4.75a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5H10V12h4.5a1.5 1.5 0 001.5-1.5v-7A1.5 1.5 0 0014.5 2h-13zm0 1.5h13v7h-13v-7z"/></svg>;
 }
 
+// ── Scheme picker dots ──
+
+const SCHEME_META: { key: string; label: string; color: string }[] = [
+  { key: "linear", label: "Lin", color: "#818cf8" },
+  { key: "github", label: "GH", color: "#58a6ff" },
+  { key: "retro", label: "Ret", color: "#fbbf24" },
+  { key: "midnight", label: "Mid", color: "#22d3ee" },
+  { key: "rose", label: "Ros", color: "#eb6f92" },
+];
+
 // ── Component ──
 
 export default function DiffReviewPage({ params }: { params: Promise<{ slug: string; position: string }> }) {
   const { slug, position } = use(params);
   const posNum = parseInt(position, 10);
   const router = useRouter();
-  const [resolved, colorMode, setColorMode] = useColorMode();
-  const t = THEMES[resolved];
+  const monacoTheme = useMonacoTheme();
+  const { mode, scheme, setMode, setScheme } = useDevpodTheme();
 
   const { data: allFeatures } = useFeaturesDiffs();
   const parentFeature = allFeatures?.find((f) => f.feature.slug === slug);
@@ -203,190 +182,335 @@ export default function DiffReviewPage({ params }: { params: Promise<{ slug: str
   useEffect(() => { window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onKey]);
 
   // ── Loading / Error ──
-  if (isLoading) return <div style={{ background: t.bg, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ color: t.textTertiary, fontSize: 13 }}>Loading...</div></div>;
-  if (!diff) return <div style={{ background: t.bg, height: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}><div style={{ color: t.textSecondary, fontSize: 13 }}>D{position} not found</div><Link href={`/diffs/${slug}`} style={{ color: t.accent, fontSize: 12 }}>← Back</Link></div>;
+  if (isLoading) return (
+    <div className="dp-diff-loading">
+      <div style={{ color: "var(--dp-text-tertiary)", fontSize: 13 }}>Loading...</div>
+    </div>
+  );
+  if (!diff) return (
+    <div className="dp-diff-loading" style={{ flexDirection: "column", gap: 12 }}>
+      <div style={{ color: "var(--dp-text-secondary)", fontSize: 13 }}>D{position} not found</div>
+      <Link href={`/diffs/${slug}`} style={{ color: "var(--dp-accent)", fontSize: 12 }}>&larr; Back</Link>
+    </div>
+  );
 
   const lang = activeFile ? getLang(activeFile.path) : "plaintext";
 
   return (
-    <div style={{ background: t.bg, color: t.text, height: "100vh", display: "flex", flexDirection: "column", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", fontSize: 13, overflow: "hidden" }}>
+    <>
+      <style>{`
+        .dp-diff-loading {
+          background: var(--dp-bg);
+          height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dp-diff-root {
+          background: var(--dp-bg);
+          color: var(--dp-text);
+          height: 100vh;
+          display: flex;
+          flex-direction: column;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          font-size: 13px;
+          overflow: hidden;
+        }
+        .dp-titlebar {
+          height: 35px;
+          display: flex;
+          align-items: center;
+          padding: 0 10px;
+          gap: 6px;
+          background: var(--dp-bg-tertiary);
+          border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+          flex-shrink: 0;
+          font-size: 12px;
+        }
+        .dp-stacknav {
+          height: 26px;
+          display: flex;
+          align-items: center;
+          padding: 0 10px;
+          gap: 2px;
+          border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+          background: var(--dp-bg);
+          font-size: 11px;
+          font-family: 'SF Mono', Menlo, monospace;
+          flex-shrink: 0;
+        }
+        .dp-sidebar {
+          width: 220px;
+          border-right: var(--dp-border-width, 1px) solid var(--dp-border);
+          background: var(--dp-bg-secondary);
+          overflow: auto;
+          flex-shrink: 0;
+        }
+        .dp-sidebar-item {
+          padding: 4px 10px;
+          cursor: pointer;
+          font-size: 12px;
+          font-family: 'SF Mono', Menlo, monospace;
+        }
+        .dp-sidebar-item:hover {
+          background: var(--dp-bg-hover);
+        }
+        .dp-tabbar {
+          height: 35px;
+          display: flex;
+          align-items: center;
+          background: var(--dp-bg-secondary);
+          border-bottom: var(--dp-border-width, 1px) solid var(--dp-border);
+          flex-shrink: 0;
+          overflow: auto;
+        }
+        .dp-tab {
+          padding: 0 12px;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          font-family: 'SF Mono', Menlo, monospace;
+          border-right: var(--dp-border-width, 1px) solid var(--dp-border);
+          color: var(--dp-text-secondary);
+        }
+        .dp-tab-active {
+          background: var(--dp-bg);
+          color: var(--dp-text);
+          border-bottom: 1px solid var(--dp-bg);
+          margin-bottom: -1px;
+        }
+        .dp-statusbar {
+          height: 22px;
+          display: flex;
+          align-items: center;
+          padding: 0 10px;
+          gap: 12px;
+          background: var(--dp-statusbar);
+          color: var(--dp-statusbar-text);
+          font-size: 11px;
+          flex-shrink: 0;
+          font-family: 'SF Mono', Menlo, monospace;
+        }
+        .dp-btn {
+          background: transparent;
+          border: var(--dp-border-width, 1px) solid var(--dp-border);
+          border-radius: var(--dp-radius, 4px);
+          padding: 2px 8px;
+          color: var(--dp-text-secondary);
+          cursor: pointer;
+          font-size: 11px;
+          font-family: inherit;
+        }
+        .dp-btn:hover {
+          border-color: var(--dp-accent);
+          color: var(--dp-text);
+        }
+        .dp-mode-group {
+          display: flex;
+          gap: 1px;
+          background: var(--dp-bg-secondary);
+          border-radius: 4px;
+          padding: 1px;
+        }
+        .dp-mode-btn {
+          background: transparent;
+          border: none;
+          border-radius: 3px;
+          padding: 3px 6px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          color: var(--dp-text-tertiary);
+        }
+        .dp-mode-btn-active {
+          background: var(--dp-bg-active);
+          color: var(--dp-text);
+        }
+        .dp-scheme-btn {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 2px solid transparent;
+          cursor: pointer;
+          transition: border-color 0.15s;
+          padding: 0;
+        }
+        .dp-scheme-btn-active {
+          border-color: var(--dp-text);
+        }
+      `}</style>
 
-      {/* ════════ TITLE BAR ════════ */}
-      <div style={{ height: 35, display: "flex", alignItems: "center", padding: "0 10px", gap: 6, background: t.bgTertiary, borderBottom: `1px solid ${t.border}`, flexShrink: 0, fontSize: 12, WebkitAppRegion: "drag" } as React.CSSProperties}>
-        <Link href={`/diffs/${slug}`} style={{ color: t.textSecondary, textDecoration: "none", WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-          ←
-        </Link>
-        <span style={{ color: t.textSecondary }}>{parentFeature?.feature.name || slug}</span>
-        <span style={{ color: t.textTertiary }}>›</span>
-        <span style={{ color: t.accent, fontWeight: 600 }}>D{diff.position}</span>
-        <span style={{ color: t.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{diff.title}</span>
+      <div className="dp-diff-root">
 
-        {/* View toggle */}
-        <button onClick={() => setRenderSideBySide(!renderSideBySide)} style={{ ...btnStyle(t), WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-          {renderSideBySide ? "Inline" : "Split"}
-        </button>
+        {/* ════ TITLE BAR ════ */}
+        <div className="dp-titlebar">
+          <Link href={`/diffs/${slug}`} style={{ color: "var(--dp-text-secondary)", textDecoration: "none" }}>
+            &larr;
+          </Link>
+          <span style={{ color: "var(--dp-text-secondary)" }}>{parentFeature?.feature.name || slug}</span>
+          <span style={{ color: "var(--dp-text-tertiary)" }}>&rsaquo;</span>
+          <span style={{ color: "var(--dp-accent)", fontWeight: 600 }}>D{diff.position}</span>
+          <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{diff.title}</span>
 
-        {/* Theme toggle */}
-        <div style={{ display: "flex", gap: 1, background: t.bgSecondary, borderRadius: 4, padding: 1, WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-          {(["light", "dark", "system"] as ColorMode[]).map(m => (
-            <button key={m} onClick={() => setColorMode(m)} style={{ ...themeBtnStyle(t, colorMode === m) }} title={m}>
-              {m === "light" ? <SunIcon /> : m === "dark" ? <MoonIcon /> : <MonitorIcon />}
-            </button>
-          ))}
+          {/* View toggle */}
+          <button onClick={() => setRenderSideBySide(!renderSideBySide)} className="dp-btn">
+            {renderSideBySide ? "Inline" : "Split"}
+          </button>
+
+          {/* Scheme dots */}
+          <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+            {SCHEME_META.map(s => (
+              <button
+                key={s.key}
+                className={`dp-scheme-btn ${scheme === s.key ? "dp-scheme-btn-active" : ""}`}
+                style={{ background: s.color }}
+                onClick={() => setScheme(s.key)}
+                title={s.label}
+              />
+            ))}
+          </div>
+
+          {/* Mode toggle */}
+          <div className="dp-mode-group">
+            {(["light", "dark", "system"] as const).map(m => (
+              <button key={m} onClick={() => setMode(m)} className={`dp-mode-btn ${mode === m ? "dp-mode-btn-active" : ""}`} title={m}>
+                {m === "light" ? <SunIcon /> : m === "dark" ? <MoonIcon /> : <MonitorIcon />}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* ════════ STACK NAV ════════ */}
-      {siblingDiffs.length > 1 && (
-        <div style={{ height: 26, display: "flex", alignItems: "center", padding: "0 10px", gap: 2, borderBottom: `1px solid ${t.border}`, background: t.bg, fontSize: 11, fontFamily: "'SF Mono', Menlo, monospace", flexShrink: 0 }}>
-          {siblingDiffs.map((d, i) => {
-            const cur = d.position === posNum;
-            const ico = d.status === "approved" || d.status === "landed" ? "✓" : d.status === "submitted" ? "◑" : "○";
-            const clr = d.status === "approved" || d.status === "landed" ? t.success : d.status === "submitted" ? t.info : t.textTertiary;
-            return (
-              <span key={d.uuid} style={{ display: "flex", alignItems: "center" }}>
-                {i > 0 && <span style={{ color: t.textTertiary, margin: "0 3px", fontSize: 9 }}>→</span>}
-                <Link href={`/diffs/${slug}/${d.position}`} style={{ padding: "1px 5px", borderRadius: 3, background: cur ? t.bgActive : "transparent", color: cur ? t.text : t.textSecondary, textDecoration: "none", fontSize: 11 }}>
-                  D{d.position}<span style={{ color: clr, marginLeft: 2 }}>{ico}</span>
-                </Link>
-              </span>
-            );
-          })}
-          <span style={{ marginLeft: "auto", color: t.textTertiary, fontSize: 10 }}>n/p diffs · j/k files · b sidebar</span>
-        </div>
-      )}
-
-      {/* ════════ MAIN AREA ════════ */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-
-        {/* ── File sidebar ── */}
-        {sidebarOpen && (
-          <div style={{ width: 220, borderRight: `1px solid ${t.border}`, background: t.bgSecondary, overflow: "auto", flexShrink: 0 }}>
-            <div style={{ padding: "8px 10px", fontSize: 11, fontWeight: 600, color: t.textSecondary, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Files ({files.length})
-            </div>
-            {files.map((f, i) => {
-              const active = i === activeIdx;
-              const fname = f.path.split("/").pop() || f.path;
-              const dir = f.path.split("/").slice(0, -1).join("/");
+        {/* ════ STACK NAV ════ */}
+        {siblingDiffs.length > 1 && (
+          <div className="dp-stacknav">
+            {siblingDiffs.map((d, i) => {
+              const cur = d.position === posNum;
+              const ico = d.status === "approved" || d.status === "landed" ? "\u2713" : d.status === "submitted" ? "\u25D1" : "\u25CB";
+              const clr = d.status === "approved" || d.status === "landed" ? "var(--dp-success)" : d.status === "submitted" ? "var(--dp-info)" : "var(--dp-text-tertiary)";
               return (
-                <div
-                  key={f.path}
-                  onClick={() => setActiveIdx(i)}
-                  style={{
-                    padding: "4px 10px",
-                    cursor: "pointer",
-                    background: active ? t.bgActive : "transparent",
-                    borderLeft: active ? `2px solid ${t.accent}` : "2px solid transparent",
-                    fontSize: 12,
-                    fontFamily: "'SF Mono', Menlo, monospace",
-                  }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget.style.background = t.bgHover); }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget.style.background = "transparent"); }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <span style={{ fontSize: 10 }}>{fileIcon(f.status)}</span>
-                    <span style={{ color: active ? t.text : t.textSecondary }}>{fname}</span>
-                    <span style={{ marginLeft: "auto", fontSize: 10 }}>
-                      <span style={{ color: t.success }}>+{f.additions}</span>
-                      {f.deletions > 0 && <span style={{ color: t.error }}>-{f.deletions}</span>}
-                    </span>
-                  </div>
-                  {dir && <div style={{ fontSize: 10, color: t.textTertiary, marginTop: 1, paddingLeft: 18 }}>{dir}</div>}
-                </div>
+                <span key={d.uuid} style={{ display: "flex", alignItems: "center" }}>
+                  {i > 0 && <span style={{ color: "var(--dp-text-tertiary)", margin: "0 3px", fontSize: 9 }}>&rarr;</span>}
+                  <Link href={`/diffs/${slug}/${d.position}`} style={{ padding: "1px 5px", borderRadius: 3, background: cur ? "var(--dp-bg-active)" : "transparent", color: cur ? "var(--dp-text)" : "var(--dp-text-secondary)", textDecoration: "none", fontSize: 11 }}>
+                    D{d.position}<span style={{ color: clr, marginLeft: 2 }}>{ico}</span>
+                  </Link>
+                </span>
               );
             })}
+            <span style={{ marginLeft: "auto", color: "var(--dp-text-tertiary)", fontSize: 10 }}>n/p diffs &middot; j/k files &middot; b sidebar</span>
           </div>
         )}
 
-        {/* ── Editor area ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          {/* Tab bar */}
-          {activeFile && (
-            <div style={{ height: 35, display: "flex", alignItems: "center", background: t.bgSecondary, borderBottom: `1px solid ${t.border}`, flexShrink: 0, overflow: "auto" }}>
+        {/* ════ MAIN AREA ════ */}
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+
+          {/* File sidebar */}
+          {sidebarOpen && (
+            <div className="dp-sidebar">
+              <div style={{ padding: "8px 10px", fontSize: 11, fontWeight: 600, color: "var(--dp-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Files ({files.length})
+              </div>
               {files.map((f, i) => {
                 const active = i === activeIdx;
                 const fname = f.path.split("/").pop() || f.path;
+                const dir = f.path.split("/").slice(0, -1).join("/");
                 return (
                   <div
                     key={f.path}
                     onClick={() => setActiveIdx(i)}
+                    className="dp-sidebar-item"
                     style={{
-                      padding: "0 12px", height: "100%", display: "flex", alignItems: "center", gap: 4,
-                      cursor: "pointer", fontSize: 12,
-                      fontFamily: "'SF Mono', Menlo, monospace",
-                      background: active ? t.bg : "transparent",
-                      color: active ? t.text : t.textSecondary,
-                      borderRight: `1px solid ${t.border}`,
-                      borderBottom: active ? `1px solid ${t.bg}` : "none",
-                      marginBottom: active ? -1 : 0,
+                      background: active ? "var(--dp-bg-active)" : undefined,
+                      borderLeft: active ? "2px solid var(--dp-accent)" : "2px solid transparent",
                     }}
                   >
-                    <span style={{ fontSize: 9 }}>{fileIcon(f.status)}</span>
-                    {fname}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <span style={{ fontSize: 10 }}>{fileIcon(f.status)}</span>
+                      <span style={{ color: active ? "var(--dp-text)" : "var(--dp-text-secondary)" }}>{fname}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 10 }}>
+                        <span style={{ color: "var(--dp-success)" }}>+{f.additions}</span>
+                        {f.deletions > 0 && <span style={{ color: "var(--dp-error)" }}>-{f.deletions}</span>}
+                      </span>
+                    </div>
+                    {dir && <div style={{ fontSize: 10, color: "var(--dp-text-tertiary)", marginTop: 1, paddingLeft: 18 }}>{dir}</div>}
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* Monaco */}
-          <div style={{ flex: 1 }}>
-            {activeFile && original !== undefined && modified !== undefined ? (
-              <DiffEditor
-                original={original || ""}
-                modified={modified || ""}
-                language={lang}
-                theme={t.monacoTheme}
-                options={{
-                  readOnly: true,
-                  renderSideBySide,
-                  minimap: { enabled: true, scale: 1, showSlider: "mouseover" },
-                  fontSize: 13,
-                  lineHeight: 20,
-                  fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace",
-                  fontLigatures: true,
-                  scrollBeyondLastLine: false,
-                  renderOverviewRuler: true,
-                  scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
-                  padding: { top: 8, bottom: 8 },
-                  renderWhitespace: "selection",
-                  bracketPairColorization: { enabled: true },
-                  guides: { indentation: true },
-                  smoothScrolling: true,
-                  cursorBlinking: "smooth",
-                }}
-              />
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: t.textTertiary, fontSize: 12 }}>
-                {activeFile ? "Loading..." : "Select a file"}
+          {/* Editor area */}
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {/* Tab bar */}
+            {activeFile && (
+              <div className="dp-tabbar">
+                {files.map((f, i) => {
+                  const active = i === activeIdx;
+                  const fname = f.path.split("/").pop() || f.path;
+                  return (
+                    <div
+                      key={f.path}
+                      onClick={() => setActiveIdx(i)}
+                      className={`dp-tab ${active ? "dp-tab-active" : ""}`}
+                    >
+                      <span style={{ fontSize: 9 }}>{fileIcon(f.status)}</span>
+                      {fname}
+                    </div>
+                  );
+                })}
               </div>
             )}
+
+            {/* Monaco */}
+            <div style={{ flex: 1 }}>
+              {activeFile && original !== undefined && modified !== undefined ? (
+                <DiffEditor
+                  original={original || ""}
+                  modified={modified || ""}
+                  language={lang}
+                  theme={monacoTheme}
+                  options={{
+                    readOnly: true,
+                    renderSideBySide,
+                    minimap: { enabled: true, scale: 1, showSlider: "mouseover" },
+                    fontSize: 13,
+                    lineHeight: 20,
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace",
+                    fontLigatures: true,
+                    scrollBeyondLastLine: false,
+                    renderOverviewRuler: true,
+                    scrollbar: { verticalScrollbarSize: 10, horizontalScrollbarSize: 10 },
+                    padding: { top: 8, bottom: 8 },
+                    renderWhitespace: "selection",
+                    bracketPairColorization: { enabled: true },
+                    guides: { indentation: true },
+                    smoothScrolling: true,
+                    cursorBlinking: "smooth",
+                  }}
+                />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--dp-text-tertiary)", fontSize: 12 }}>
+                  {activeFile ? "Loading..." : "Select a file"}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ════════ STATUS BAR ════════ */}
-      <div style={{ height: 22, display: "flex", alignItems: "center", padding: "0 10px", gap: 12, background: t.statusBar, color: t.statusBarText, fontSize: 11, flexShrink: 0, fontFamily: "'SF Mono', Menlo, monospace" }}>
-        <span>{parentFeature?.feature.name}</span>
-        <span>D{diff.position} of {siblingDiffs.length || "?"}</span>
-        {activeFile && <span>{activeFile.path}</span>}
-        <span style={{ marginLeft: "auto" }}>
-          +{diff.additions} -{diff.deletions}
-        </span>
-        <span>{diff.status}</span>
-        <span>{files.length} {files.length === 1 ? "file" : "files"}</span>
+        {/* ════ STATUS BAR ════ */}
+        <div className="dp-statusbar">
+          <span>{parentFeature?.feature.name}</span>
+          <span>D{diff.position} of {siblingDiffs.length || "?"}</span>
+          {activeFile && <span>{activeFile.path}</span>}
+          <span style={{ marginLeft: "auto" }}>
+            +{diff.additions} -{diff.deletions}
+          </span>
+          <span>{diff.status}</span>
+          <span>{files.length} {files.length === 1 ? "file" : "files"}</span>
+        </div>
       </div>
-    </div>
+    </>
   );
-}
-
-// ── Shared styles ──
-
-function btnStyle(t: Theme): React.CSSProperties {
-  return { background: "transparent", border: `1px solid ${t.border}`, borderRadius: 3, padding: "2px 8px", color: t.textSecondary, cursor: "pointer", fontSize: 11, fontFamily: "inherit" };
-}
-
-function themeBtnStyle(t: Theme, active: boolean): React.CSSProperties {
-  return { background: active ? t.bgActive : "transparent", border: "none", borderRadius: 3, padding: "3px 6px", color: active ? t.text : t.textTertiary, cursor: "pointer", display: "flex", alignItems: "center" };
 }
