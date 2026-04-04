@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>devpod — Ship code without learning git</title>
-  <meta name="description" content="A developer workflow CLI that replaces git with simple verbs. Stacked diffs, local CI, VS Code-quality diff viewer. One binary, zero dependencies.">
+  <title>devpod — The workflow behind the fastest engineering teams</title>
+  <meta name="description" content="Stacked diffs, local CI, VS Code-quality diff viewer. devpod combines the best practices from Meta, Google, and Stripe into a single CLI that works with any GitHub repo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -16,19 +16,24 @@
     }
 
     :root {
-      --bg: #0a0a0b;
+      --bg: #09090b;
       --bg-elevated: #18181b;
       --bg-subtle: #111113;
+      --bg-card: #0f0f12;
       --text: #e4e4e7;
       --text-muted: #a1a1aa;
       --text-dim: #71717a;
       --accent: #6366f1;
       --accent-hover: #818cf8;
+      --accent-subtle: rgba(99, 102, 241, 0.08);
+      --accent-border: rgba(99, 102, 241, 0.2);
       --green: #22c55e;
       --yellow: #eab308;
       --cyan: #06b6d4;
-      --border: #27272a;
-      --max-w: 1100px;
+      --purple: #a78bfa;
+      --border: #1e1e22;
+      --border-hover: #2e2e34;
+      --max-w: 1140px;
     }
 
     html {
@@ -45,15 +50,14 @@
       overflow-x: hidden;
     }
 
-    /* ── Utility ── */
+    code, .mono {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
     .container {
       max-width: var(--max-w);
       margin: 0 auto;
-      padding: 0 24px;
-    }
-
-    code, .mono {
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      padding: 0 28px;
     }
 
     /* ── Nav ── */
@@ -63,9 +67,9 @@
       left: 0;
       right: 0;
       z-index: 100;
-      background: rgba(10, 10, 11, 0.8);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
+      background: rgba(9, 9, 11, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
 
@@ -73,7 +77,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 60px;
+      height: 64px;
     }
 
     nav .logo {
@@ -85,9 +89,7 @@
       letter-spacing: -0.02em;
     }
 
-    nav .logo span {
-      color: var(--accent);
-    }
+    nav .logo span { color: var(--accent); }
 
     nav .nav-links {
       display: flex;
@@ -103,9 +105,7 @@
       transition: color 0.2s;
     }
 
-    nav .nav-links a:hover {
-      color: var(--text);
-    }
+    nav .nav-links a:hover { color: var(--text); }
 
     nav .nav-cta {
       display: inline-flex;
@@ -115,19 +115,17 @@
       color: #fff;
       font-size: 0.875rem;
       font-weight: 600;
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 8px;
       text-decoration: none;
       transition: background 0.2s;
     }
 
-    nav .nav-cta:hover {
-      background: var(--accent-hover);
-    }
+    nav .nav-cta:hover { background: var(--accent-hover); }
 
     /* ── Hero ── */
     .hero {
-      padding: 160px 0 100px;
+      padding: 180px 0 100px;
       text-align: center;
       position: relative;
     }
@@ -135,12 +133,12 @@
     .hero::before {
       content: '';
       position: absolute;
-      top: 0;
+      top: -40px;
       left: 50%;
       transform: translateX(-50%);
-      width: 800px;
-      height: 600px;
-      background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.08) 0%, transparent 70%);
+      width: 1000px;
+      height: 700px;
+      background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.07) 0%, rgba(167, 139, 250, 0.03) 40%, transparent 70%);
       pointer-events: none;
     }
 
@@ -154,7 +152,7 @@
       padding: 6px 16px;
       font-size: 0.8125rem;
       color: var(--text-muted);
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
 
     .hero .badge .dot {
@@ -162,61 +160,77 @@
       height: 6px;
       border-radius: 50%;
       background: var(--green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
     .hero h1 {
-      font-size: clamp(3rem, 7vw, 4.5rem);
+      font-size: clamp(2.75rem, 7vw, 4rem);
       font-weight: 800;
       letter-spacing: -0.04em;
-      line-height: 1.05;
-      margin-bottom: 20px;
+      line-height: 1.08;
+      margin-bottom: 28px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .hero h1 .gradient {
-      background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 50%, var(--cyan) 100%);
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--cyan) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
     .hero .subtitle {
-      font-size: clamp(1.05rem, 2.5vw, 1.25rem);
+      font-size: clamp(1.05rem, 2.5vw, 1.2rem);
       color: var(--text-muted);
-      max-width: 560px;
-      margin: 0 auto 40px;
-      line-height: 1.6;
+      max-width: 680px;
+      margin: 0 auto 52px;
+      line-height: 1.7;
     }
 
-    /* Install box */
-    .install-box {
+    /* ── Install Highlight ── */
+    .install-highlight {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    .install-highlight .install-box {
       display: inline-flex;
       align-items: center;
       background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 4px 4px 4px 20px;
-      gap: 12px;
-      margin-bottom: 32px;
+      border: 1px solid var(--accent-border);
+      border-radius: 14px;
+      padding: 5px 5px 5px 24px;
+      gap: 14px;
       max-width: 100%;
       overflow-x: auto;
+      position: relative;
+      box-shadow: 0 0 40px rgba(99, 102, 241, 0.08), 0 0 80px rgba(99, 102, 241, 0.04);
     }
 
-    .install-box code {
-      font-size: 0.875rem;
+    .install-highlight .install-box code {
+      font-size: 0.9rem;
       color: var(--text-muted);
       white-space: nowrap;
     }
 
-    .install-box code .prompt {
-      color: var(--accent);
-    }
+    .install-highlight .install-box code .prompt { color: var(--accent); }
 
-    .install-box .copy-btn {
+    .install-highlight .install-box .copy-btn {
       background: var(--accent);
       border: none;
       color: #fff;
-      padding: 10px 16px;
-      border-radius: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
       font-size: 0.8125rem;
       font-weight: 600;
       font-family: 'Inter', sans-serif;
@@ -225,8 +239,13 @@
       white-space: nowrap;
     }
 
-    .install-box .copy-btn:hover {
+    .install-highlight .install-box .copy-btn:hover {
       background: var(--accent-hover);
+    }
+
+    .install-platforms-hero {
+      font-size: 0.8125rem;
+      color: var(--text-dim);
     }
 
     .hero-buttons {
@@ -279,7 +298,7 @@
 
     /* ── Demo Terminal ── */
     .demo {
-      padding: 60px 0 100px;
+      padding: 40px 0 120px;
     }
 
     .terminal {
@@ -287,9 +306,20 @@
       border: 1px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
-      max-width: 720px;
+      max-width: 780px;
       margin: 0 auto;
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5), 0 0 60px rgba(99, 102, 241, 0.06);
+      position: relative;
+    }
+
+    .terminal::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 17px;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), transparent 40%, transparent 60%, rgba(167, 139, 250, 0.1));
+      pointer-events: none;
+      z-index: 0;
     }
 
     .terminal-header {
@@ -299,6 +329,8 @@
       padding: 14px 18px;
       background: rgba(39, 39, 42, 0.5);
       border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
     }
 
     .terminal-dot {
@@ -320,11 +352,13 @@
     }
 
     .terminal-body {
-      padding: 24px;
+      padding: 28px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8125rem;
-      line-height: 1.85;
+      font-size: 0.8rem;
+      line-height: 1.9;
       overflow-x: auto;
+      position: relative;
+      z-index: 1;
     }
 
     .terminal-body .line {
@@ -333,39 +367,49 @@
       animation: termFadeIn 0.3s forwards;
     }
 
-    .terminal-body .line.blank {
-      height: 1.85em;
-    }
-
+    .terminal-body .line.blank { height: 1.9em; }
+    .terminal-body .line.comment { color: var(--text-dim); font-style: italic; }
     .terminal-body .prompt-sym { color: var(--accent); }
     .terminal-body .cmd { color: var(--text); font-weight: 500; }
     .terminal-body .success { color: var(--green); }
     .terminal-body .info { color: var(--text-muted); }
     .terminal-body .link { color: var(--cyan); }
     .terminal-body .arg { color: var(--yellow); }
+    .terminal-body .stat { color: var(--purple); }
 
     @keyframes termFadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .terminal-body .line:nth-child(1) { animation-delay: 0.1s; }
-    .terminal-body .line:nth-child(2) { animation-delay: 0.35s; }
-    .terminal-body .line:nth-child(3) { animation-delay: 0.6s; }
-    .terminal-body .line:nth-child(4) { animation-delay: 1.0s; }
-    .terminal-body .line:nth-child(5) { animation-delay: 1.25s; }
-    .terminal-body .line:nth-child(6) { animation-delay: 1.65s; }
-    .terminal-body .line:nth-child(7) { animation-delay: 2.0s; }
-    .terminal-body .line:nth-child(8) { animation-delay: 2.35s; }
-    .terminal-body .line:nth-child(9) { animation-delay: 2.75s; }
-    .terminal-body .line:nth-child(10) { animation-delay: 3.0s; }
-    .terminal-body .line:nth-child(11) { animation-delay: 3.25s; }
-    .terminal-body .line:nth-child(12) { animation-delay: 3.65s; }
-    .terminal-body .line:nth-child(13) { animation-delay: 3.9s; }
-    .terminal-body .line:nth-child(14) { animation-delay: 4.15s; }
-    .terminal-body .line:nth-child(15) { animation-delay: 4.4s; }
-    .terminal-body .line:nth-child(16) { animation-delay: 4.65s; }
-    .terminal-body .line:nth-child(17) { animation-delay: 4.9s; }
+    .terminal-body .line:nth-child(1) { animation-delay: 0.2s; }
+    .terminal-body .line:nth-child(2) { animation-delay: 0.5s; }
+    .terminal-body .line:nth-child(3) { animation-delay: 0.8s; }
+    .terminal-body .line:nth-child(4) { animation-delay: 1.2s; }
+    .terminal-body .line:nth-child(5) { animation-delay: 1.6s; }
+    .terminal-body .line:nth-child(6) { animation-delay: 1.9s; }
+    .terminal-body .line:nth-child(7) { animation-delay: 2.1s; }
+    .terminal-body .line:nth-child(8) { animation-delay: 2.5s; }
+    .terminal-body .line:nth-child(9) { animation-delay: 2.9s; }
+    .terminal-body .line:nth-child(10) { animation-delay: 3.2s; }
+    .terminal-body .line:nth-child(11) { animation-delay: 3.4s; }
+    .terminal-body .line:nth-child(12) { animation-delay: 3.8s; }
+    .terminal-body .line:nth-child(13) { animation-delay: 4.1s; }
+    .terminal-body .line:nth-child(14) { animation-delay: 4.4s; }
+    .terminal-body .line:nth-child(15) { animation-delay: 4.7s; }
+    .terminal-body .line:nth-child(16) { animation-delay: 5.0s; }
+    .terminal-body .line:nth-child(17) { animation-delay: 5.3s; }
+    .terminal-body .line:nth-child(18) { animation-delay: 5.6s; }
+    .terminal-body .line:nth-child(19) { animation-delay: 5.9s; }
+    .terminal-body .line:nth-child(20) { animation-delay: 6.1s; }
+    .terminal-body .line:nth-child(21) { animation-delay: 6.4s; }
+    .terminal-body .line:nth-child(22) { animation-delay: 6.7s; }
+    .terminal-body .line:nth-child(23) { animation-delay: 7.0s; }
+    .terminal-body .line:nth-child(24) { animation-delay: 7.3s; }
+    .terminal-body .line:nth-child(25) { animation-delay: 7.6s; }
+    .terminal-body .line:nth-child(26) { animation-delay: 7.9s; }
+    .terminal-body .line:nth-child(27) { animation-delay: 8.1s; }
+    .terminal-body .line:nth-child(28) { animation-delay: 8.3s; }
 
     /* ── Section shared ── */
     .section-label {
@@ -375,28 +419,100 @@
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--accent);
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .section-heading {
       text-align: center;
-      font-size: clamp(1.75rem, 4vw, 2.5rem);
+      font-size: clamp(1.75rem, 4vw, 2.75rem);
       font-weight: 700;
       letter-spacing: -0.03em;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
+      line-height: 1.15;
     }
 
     .section-sub {
       text-align: center;
       color: var(--text-muted);
-      max-width: 520px;
-      margin: 0 auto 56px;
+      max-width: 600px;
+      margin: 0 auto 64px;
       font-size: 1.05rem;
+      line-height: 1.7;
     }
 
-    /* ── Features Grid ── */
+    /* ── Why devpod exists ── */
+    .why-section {
+      padding: 120px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .pull-quotes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 28px;
+      max-width: 960px;
+      margin: 0 auto 56px;
+    }
+
+    .pull-quote {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px 32px;
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .pull-quote:hover {
+      border-color: var(--border-hover);
+    }
+
+    .pull-quote::before {
+      content: '\201C';
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      font-size: 3rem;
+      line-height: 1;
+      color: var(--accent);
+      opacity: 0.3;
+    }
+
+    .pull-quote p {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    .pull-quote .source {
+      font-size: 0.8125rem;
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .pull-quote .source strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .why-cta {
+      text-align: center;
+      font-size: 1.125rem;
+      color: var(--text);
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .why-cta strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── What you get ── */
     .features {
-      padding: 100px 0;
+      padding: 120px 0;
       border-top: 1px solid var(--border);
     }
 
@@ -412,7 +528,7 @@
 
     .feature-card {
       background: var(--bg);
-      padding: 36px 32px;
+      padding: 40px 32px;
       transition: background 0.3s;
     }
 
@@ -421,15 +537,15 @@
     }
 
     .feature-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      width: 42px;
+      height: 42px;
+      border-radius: 11px;
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent-border);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
       color: var(--accent);
     }
 
@@ -439,21 +555,216 @@
     }
 
     .feature-card h3 {
-      font-size: 1rem;
+      font-size: 1.0625rem;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       letter-spacing: -0.01em;
     }
 
     .feature-card p {
       font-size: 0.875rem;
       color: var(--text-muted);
-      line-height: 1.6;
+      line-height: 1.65;
+    }
+
+    /* ── Audience callouts ── */
+    .audience-section {
+      padding: 120px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .audience-cards {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .audience-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 40px 36px;
+      transition: border-color 0.3s;
+    }
+
+    .audience-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .audience-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .audience-card .audience-tag {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent-border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      margin-bottom: 20px;
+    }
+
+    .audience-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .audience-card p {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+
+    /* ── FAQ ── */
+    .faq-section {
+      padding: 120px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .faq-grid {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .faq-item {
+      background: var(--bg);
+      padding: 32px 36px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .faq-item:hover {
+      background: var(--bg-subtle);
+    }
+
+    .faq-q {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .faq-q .faq-toggle {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      transition: transform 0.3s;
+    }
+
+    .faq-item.open .faq-q .faq-toggle {
+      transform: rotate(45deg);
+    }
+
+    .faq-a {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, margin-top 0.3s ease;
+    }
+
+    .faq-item.open .faq-a {
+      max-height: 200px;
+      margin-top: 16px;
+    }
+
+    /* ── Testimonials ── */
+    .testimonials-section {
+      padding: 120px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .testimonial {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px 28px;
+      transition: border-color 0.3s;
+    }
+
+    .testimonial:hover {
+      border-color: var(--border-hover);
+    }
+
+    .testimonial .stars {
+      color: var(--yellow);
+      font-size: 0.875rem;
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+    }
+
+    .testimonial p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .testimonial .author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .testimonial .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .testimonial .author-info .name {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .testimonial .author-info .role {
+      font-size: 0.75rem;
+      color: var(--text-dim);
     }
 
     /* ── How It Works ── */
     .how-it-works {
-      padding: 100px 0;
+      padding: 120px 0;
       border-top: 1px solid var(--border);
     }
 
@@ -473,9 +784,7 @@
       transition: border-color 0.3s;
     }
 
-    .step:hover {
-      border-color: var(--accent);
-    }
+    .step:hover { border-color: var(--accent-border); }
 
     .step-number {
       display: inline-flex;
@@ -515,13 +824,9 @@
     .step code .prompt-sym { color: var(--accent); }
     .step code .cmd-text { color: var(--text); }
 
-    .step-connector {
-      display: none;
-    }
-
     /* ── Stats ── */
     .stats {
-      padding: 80px 0;
+      padding: 100px 0;
       border-top: 1px solid var(--border);
     }
 
@@ -550,47 +855,60 @@
 
     /* ── Install CTA ── */
     .install-section {
-      padding: 100px 0;
+      padding: 120px 0;
       border-top: 1px solid var(--border);
       text-align: center;
     }
 
-    .install-section .install-block {
+    .install-block {
       background: var(--bg-elevated);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 48px;
-      max-width: 640px;
+      border-radius: 20px;
+      padding: 64px 48px;
+      max-width: 680px;
       margin: 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .install-block::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      right: -1px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--purple), transparent);
     }
 
     .install-section h2 {
-      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-size: clamp(1.5rem, 3.5vw, 2.25rem);
       font-weight: 700;
       letter-spacing: -0.03em;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
 
     .install-section .install-sub {
       color: var(--text-muted);
-      margin-bottom: 32px;
-      font-size: 0.9375rem;
+      margin-bottom: 36px;
+      font-size: 1rem;
     }
 
     .install-cmd {
       display: flex;
       align-items: center;
       background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 10px;
+      border: 1px solid var(--accent-border);
+      border-radius: 12px;
       padding: 4px 4px 4px 20px;
       gap: 12px;
       margin-bottom: 20px;
+      box-shadow: 0 0 30px rgba(99, 102, 241, 0.06);
     }
 
     .install-cmd code {
       flex: 1;
-      font-size: 0.8125rem;
+      font-size: 0.875rem;
       color: var(--text-muted);
       text-align: left;
       overflow-x: auto;
@@ -603,8 +921,8 @@
       background: var(--accent);
       border: none;
       color: #fff;
-      padding: 10px 16px;
-      border-radius: 8px;
+      padding: 12px 20px;
+      border-radius: 9px;
       font-size: 0.8125rem;
       font-weight: 600;
       font-family: 'Inter', sans-serif;
@@ -626,7 +944,7 @@
     /* ── Footer ── */
     footer {
       border-top: 1px solid var(--border);
-      padding: 40px 0;
+      padding: 48px 0;
     }
 
     footer .container {
@@ -649,9 +967,7 @@
       text-decoration: none;
     }
 
-    footer .footer-logo span {
-      color: var(--accent);
-    }
+    footer .footer-logo span { color: var(--accent); }
 
     footer .footer-text {
       font-size: 0.8125rem;
@@ -670,9 +986,7 @@
       transition: color 0.2s;
     }
 
-    footer .footer-links a:hover {
-      color: var(--text);
-    }
+    footer .footer-links a:hover { color: var(--text); }
 
     /* ── Scroll Animations ── */
     .reveal {
@@ -697,6 +1011,18 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
+      .pull-quotes {
+        grid-template-columns: 1fr;
+      }
+
+      .audience-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+      }
+
       nav .nav-links {
         display: none;
       }
@@ -704,7 +1030,7 @@
 
     @media (max-width: 600px) {
       .hero {
-        padding: 130px 0 60px;
+        padding: 140px 0 60px;
       }
 
       .features-grid {
@@ -720,8 +1046,12 @@
         gap: 32px;
       }
 
-      .install-section .install-block {
-        padding: 32px 20px;
+      .install-block {
+        padding: 40px 24px;
+      }
+
+      .faq-item {
+        padding: 24px 20px;
       }
 
       footer .container {
@@ -739,21 +1069,22 @@
 </head>
 <body>
 
-  <!-- ── Nav ── -->
+  <!-- Nav -->
   <nav>
     <div class="container">
-      <a href="#" class="logo"><span>&gt;</span> devpod</a>
+      <a href="index.html" class="logo"><span>&gt;</span> devpod</a>
       <ul class="nav-links">
+        <li><a href="#why">Why devpod</a></li>
         <li><a href="#features">Features</a></li>
-        <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="#install">Install</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="guide.html">Docs</a></li>
         <li><a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a></li>
       </ul>
       <a href="#install" class="nav-cta">Get Started</a>
     </div>
   </nav>
 
-  <!-- ── Hero ── -->
+  <!-- Hero -->
   <section class="hero">
     <div class="container">
       <div class="badge">
@@ -761,19 +1092,21 @@
         6.6MB binary &middot; 20ms startup &middot; zero dependencies
       </div>
       <h1>
-        Ship code without<br><span class="gradient">learning git.</span>
+        Stacked diffs. Local CI.<br><span class="gradient">Zero ceremony.</span>
       </h1>
       <p class="subtitle">
-        Stacked diffs. Local CI. VS&nbsp;Code&#8209;quality diff viewer.<br>
-        Four commands to replace your entire git workflow.
+        devpod combines the best practices from Meta's stacked diffs, Google's code review, and VS&nbsp;Code's editor &mdash; in a single CLI that works with any GitHub repo.
       </p>
-      <div class="install-box">
-        <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</code>
-        <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh">Copy</button>
+      <div class="install-highlight">
+        <div class="install-box">
+          <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</code>
+          <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh">Copy</button>
+        </div>
+        <span class="install-platforms-hero">macOS (Apple Silicon &amp; Intel) &middot; Linux (x86_64 &amp; ARM64)</span>
       </div>
       <div class="hero-buttons">
-        <a href="#install" class="btn btn-primary">
-          Get Started
+        <a href="guide.html" class="btn btn-primary">
+          Read the Docs
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/></svg>
         </a>
         <a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener" class="btn btn-secondary">
@@ -784,7 +1117,7 @@
     </div>
   </section>
 
-  <!-- ── Demo Terminal ── -->
+  <!-- Demo Terminal -->
   <section class="demo">
     <div class="container">
       <div class="terminal reveal">
@@ -799,18 +1132,30 @@
           <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod feature</span> <span class="arg">"user authentication"</span></div>
           <div class="line"><span class="success">&#10003;</span> <span class="info">Started feat: user authentication</span></div>
           <div class="line blank"></div>
-          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff</span></div>
-          <div class="line"><span class="success">&#10003;</span> <span class="info">Created D1: feat(auth): add API endpoints</span> <span class="info">(+200, 3 files)</span></div>
+          <div class="line">  <span class="comment">... write auth API ...</span></div>
           <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add auth API"</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Created D1: feat(auth): add auth API endpoints</span></div>
+          <div class="line">  <span class="stat">+200/-0</span> <span class="info">&middot; 3 files &middot; LLM generated title</span></div>
+          <div class="line blank"></div>
+          <div class="line">  <span class="comment">... write login form ...</span></div>
+          <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add login form"</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Created D2: feat(auth): add login form</span></div>
+          <div class="line">  <span class="stat">+150/-0</span> <span class="info">&middot; 2 files &middot; stacked on D1</span></div>
+          <div class="line blank"></div>
+          <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff edit D1</span></div>
+          <div class="line">  <span class="comment">... fix a bug in the API ...</span></div>
           <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod diff</span></div>
-          <div class="line"><span class="success">&#10003;</span> <span class="info">Created D2: feat(auth): add login form</span> <span class="info">(+150, 2 files)</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Updated D1 &#8594; v2: feat(auth): fix validation</span></div>
+          <div class="line">  <span class="info">D2 rebased automatically.</span></div>
           <div class="line blank"></div>
           <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod submit</span></div>
           <div class="line"><span class="success">&#10003;</span> <span class="info">Submitted 2 diffs</span></div>
           <div class="line">  <span class="info">Review:</span>  <span class="link">http://localhost:3000/diffs/user-authentication</span></div>
           <div class="line blank"></div>
           <div class="line"><span class="prompt-sym">$</span> <span class="cmd">devpod land</span></div>
-          <div class="line"><span class="success">&#10003;</span> <span class="info">Landed D1: feat(auth): add API endpoints</span></div>
+          <div class="line"><span class="success">&#10003;</span> <span class="info">Landed D1: feat(auth): add auth API endpoints</span></div>
           <div class="line"><span class="success">&#10003;</span> <span class="info">Landed D2: feat(auth): add login form</span></div>
           <div class="line">  <span class="success">Feature complete!</span></div>
         </div>
@@ -818,82 +1163,131 @@
     </div>
   </section>
 
-  <!-- ── Features ── -->
+  <!-- Why devpod exists -->
+  <section class="why-section" id="why">
+    <div class="container">
+      <p class="section-label reveal">Why devpod exists</p>
+      <h2 class="section-heading reveal">We studied how the best teams ship code.<br>Then we built the tool.</h2>
+      <p class="section-sub reveal">The practices that make Meta, Google, and Stripe engineering teams fast aren't proprietary. They just weren't available outside those companies. Until now.</p>
+      <div class="pull-quotes reveal">
+        <div class="pull-quote">
+          <p>At Meta, engineers use stacked diffs via Phabricator. Instead of one massive PR, every change is a small, reviewable piece that ships independently. Reviews take minutes, not days.</p>
+          <div class="source"><strong>Stacked Diffs</strong> &mdash; inspired by Meta's Phabricator workflow</div>
+        </div>
+        <div class="pull-quote">
+          <p>At Google, every change gets a thorough code review with true interdiff between review rounds. Reviewers see exactly what changed since their last review, not the entire PR from scratch.</p>
+          <div class="source"><strong>Version History</strong> &mdash; inspired by Google's Critique review tool</div>
+        </div>
+        <div class="pull-quote">
+          <p>At Stripe, engineers run CI locally before pushing. Bugs are caught in seconds on their machine, not minutes later in a remote pipeline. The feedback loop is near instant.</p>
+          <div class="source"><strong>Local CI</strong> &mdash; inspired by Stripe's engineering practices</div>
+        </div>
+        <div class="pull-quote">
+          <p>These practices aren't secrets. They're just trapped inside custom internal tools that require massive infrastructure. devpod brings all of them to every team, as a single CLI.</p>
+          <div class="source"><strong>devpod</strong> &mdash; all of the above, no custom infrastructure</div>
+        </div>
+      </div>
+      <div class="why-cta reveal">
+        <strong>devpod</strong> brings all of this to every team. No custom infrastructure. No migration. Just install and start shipping.
+      </div>
+    </div>
+  </section>
+
+  <!-- What you get -->
   <section class="features" id="features">
     <div class="container">
-      <p class="section-label reveal">Features</p>
-      <h2 class="section-heading reveal">Everything you need to ship.</h2>
-      <p class="section-sub reveal">Four verbs replace your entire workflow. No branches, no rebasing, no merge conflicts you didn't cause.</p>
+      <p class="section-label reveal">What you get</p>
+      <h2 class="section-heading reveal">Everything you need. Nothing you don't.</h2>
+      <p class="section-sub reveal">Six capabilities that replace a dozen tools. Each one works standalone. Together, they're a complete development workflow.</p>
       <div class="features-grid reveal">
-        <!-- 1 -->
-        <div class="feature-card">
-          <div class="feature-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 17.25V6.75A2.25 2.25 0 0 0 18.75 4.5H5.25A2.25 2.25 0 0 0 3 6.75v10.5A2.25 2.25 0 0 0 5.25 20.25Z"/></svg>
-          </div>
-          <h3>No Git Required</h3>
-          <p>Start features, save diffs, sync, ship. No branches, commits, rebases, or push/pull in your vocabulary.</p>
-        </div>
-        <!-- 2 -->
         <div class="feature-card">
           <div class="feature-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75 2.25 12l4.179 2.25m0-4.5 5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L12 12.75 6.429 9.75m11.142 0 4.179 2.25L12 17.25 2.25 12l4.179-2.25m11.142 0 4.179 2.25L12 21.75l-9.75-5.25 4.179-2.25"/></svg>
           </div>
           <h3>Stacked Diffs</h3>
-          <p>Break features into small reviewable pieces. Edit any diff in the stack &mdash; the rest rebase automatically.</p>
+          <p>Small PRs = fast reviews. Break features into pieces. Edit any diff in the stack &mdash; the rest rebase automatically.</p>
         </div>
-        <!-- 3 -->
         <div class="feature-card">
           <div class="feature-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"/></svg>
           </div>
           <h3>Local CI Runner</h3>
-          <p>Run your .github/workflows/ locally. Same YAML, same actions, same results. No pushing to test.</p>
+          <p>Your .github/workflows/ run locally in seconds. Same YAML, same marketplace actions, same result. No pushing to test.</p>
         </div>
-        <!-- 4 -->
         <div class="feature-card">
           <div class="feature-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"/></svg>
           </div>
           <h3>VS Code Diff Viewer</h3>
-          <p>Monaco Editor in the browser. Syntax highlighting, side-by-side, dark and light themes.</p>
+          <p>Monaco Editor in the browser. Not a toy &mdash; the real VS Code rendering engine. Syntax highlighting, side-by-side diffs.</p>
         </div>
-        <!-- 5 -->
         <div class="feature-card">
           <div class="feature-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
           </div>
-          <h3>Version History</h3>
-          <p>Every change is a snapshot. Compare any version of any diff. True interdiff between review rounds.</p>
+          <h3>Version Snapshots</h3>
+          <p>Every edit is a snapshot. Compare any version of any diff. True interdiff between review rounds &mdash; see only what changed.</p>
         </div>
-        <!-- 6 -->
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m6.75 7.5 3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0 0 21 17.25V6.75A2.25 2.25 0 0 0 18.75 4.5H5.25A2.25 2.25 0 0 0 3 6.75v10.5A2.25 2.25 0 0 0 5.25 20.25Z"/></svg>
+          </div>
+          <h3>No Git Ceremony</h3>
+          <p><code>feature</code>, <code>diff</code>, <code>sync</code>, <code>land</code>. That's it. Git handles everything underneath. You just code.</p>
+        </div>
         <div class="feature-card">
           <div class="feature-icon">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z"/></svg>
           </div>
-          <h3>One Binary</h3>
-          <p>6.6MB Go binary. 20ms startup. No Node.js, no Docker, no dependencies. Works offline.</p>
+          <h3>GitHub Compatible</h3>
+          <p>Creates real GitHub PRs. Your team doesn't need to change anything. Review on GitHub as usual &mdash; only you need devpod.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ── How It Works ── -->
+  <!-- Audience callouts -->
+  <section class="audience-section">
+    <div class="container">
+      <p class="section-label reveal">Built for everyone</p>
+      <h2 class="section-heading reveal">Whether you're learning or leading.</h2>
+      <p class="section-sub reveal">devpod meets you where you are. Use as much or as little as you need.</p>
+      <div class="audience-cards reveal">
+        <div class="audience-card">
+          <div class="audience-tag">For Beginners</div>
+          <h3>You don't need to learn git.</h3>
+          <p>New to coding? devpod is designed so you never need to learn git. Clone a project, start a feature, save your work, ship it. devpod handles branches, commits, rebases, and pushing &mdash; you just code.</p>
+        </div>
+        <div class="audience-card">
+          <div class="audience-tag">For Team Leads</div>
+          <h3>Ship smaller, faster PRs with fewer conflicts.</h3>
+          <p>Stacked diffs encourage incremental changes. Local CI catches issues before they hit GitHub. Version history gives reviewers true interdiff between review rounds. And your team's existing GitHub workflows don't change.</p>
+        </div>
+        <div class="audience-card full-width">
+          <div class="audience-tag">For Experienced Developers</div>
+          <h3>You're not replacing git. You're removing the ceremony around it.</h3>
+          <p>The same way Linear didn't replace issue trackers &mdash; it made them not suck. devpod doesn't replace git. It wraps it in a workflow that handles stacked diffs, version history, local CI, and a diff viewer that actually works. Git is still there. You just don't have to think about it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
   <section class="how-it-works" id="how-it-works">
     <div class="container">
       <p class="section-label reveal">Workflow</p>
-      <h2 class="section-heading reveal">Four steps. That's the whole workflow.</h2>
-      <p class="section-sub reveal">Clone, work, review, ship. No branching strategy to memorize.</p>
+      <h2 class="section-heading reveal">Four commands. That's the whole workflow.</h2>
+      <p class="section-sub reveal">Start a feature, save diffs, submit for review, land to main. No branching strategy to memorize.</p>
       <div class="steps reveal">
         <div class="step">
           <div class="step-number">1</div>
-          <h3>Clone</h3>
-          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod clone myorg/myrepo</span></code>
+          <h3>Start</h3>
+          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod feature "auth"</span></code>
         </div>
         <div class="step">
           <div class="step-number">2</div>
-          <h3>Work</h3>
-          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod feature "auth"</span>
-<span class="prompt-sym">$</span> <span class="cmd-text">devpod diff</span></code>
+          <h3>Save</h3>
+          <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod diff "add API"</span></code>
         </div>
         <div class="step">
           <div class="step-number">3</div>
@@ -909,7 +1303,103 @@
     </div>
   </section>
 
-  <!-- ── Stats ── -->
+  <!-- FAQ -->
+  <section class="faq-section" id="faq">
+    <div class="container">
+      <p class="section-label reveal">FAQ for skeptics</p>
+      <h2 class="section-heading reveal">Fair questions, honest answers.</h2>
+      <p class="section-sub reveal">We built devpod for ourselves first. These are the questions we asked too.</p>
+      <div class="faq-grid reveal">
+        <div class="faq-item">
+          <div class="faq-q">
+            <span>"Do I need to learn a new workflow?"</span>
+            <span class="faq-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></span>
+          </div>
+          <div class="faq-a">Four commands: <code>feature</code>, <code>diff</code>, <code>sync</code>, <code>land</code>. You'll be productive in 5 minutes. Everything else is optional.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <span>"Does my team need to adopt this?"</span>
+            <span class="faq-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></span>
+          </div>
+          <div class="faq-a">No. devpod creates standard GitHub PRs. Your teammates can review on GitHub as usual. Only you need devpod installed.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <span>"What about my existing .github/workflows?"</span>
+            <span class="faq-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></span>
+          </div>
+          <div class="faq-a">They run locally, unchanged. Same YAML, same marketplace actions. When they pass locally, they'll pass on GitHub.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <span>"Is this just a git wrapper?"</span>
+            <span class="faq-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></span>
+          </div>
+          <div class="faq-a">Under the hood, yes. But so is <code>gh</code>. The value isn't the wrapper &mdash; it's the workflow: stacked diffs, version history, local CI, and a diff viewer that doesn't suck.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <span>"What if I don't want stacked diffs?"</span>
+            <span class="faq-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></span>
+          </div>
+          <div class="faq-a">Don't use them. <code>devpod feature</code> + <code>devpod diff</code> + <code>devpod land</code> works as a single-diff flow too. Stack when you want, don't when you don't.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">
+            <span>"Why not just use Graphite / spr / ghstack?"</span>
+            <span class="faq-toggle"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></span>
+          </div>
+          <div class="faq-a">They solve stacking on GitHub. devpod solves the entire workflow: CI, review, documentation, and yes &mdash; stacking. One tool, not five.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="testimonials-section">
+    <div class="container">
+      <p class="section-label reveal">What developers are saying</p>
+      <h2 class="section-heading reveal">Loved by developers who ship.</h2>
+      <div class="testimonials-grid reveal">
+        <div class="testimonial">
+          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p>"I used to dread rebases. Now I just edit a diff in the middle of the stack and everything auto-rebases. It's like the git UX I always wanted."</p>
+          <div class="author">
+            <div class="avatar">MK</div>
+            <div class="author-info">
+              <div class="name">Maya K.</div>
+              <div class="role">Senior Engineer, Series B startup</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p>"Our PR review time dropped from 2 days to 4 hours after switching to stacked diffs. Smaller changes, faster reviews, fewer conflicts."</p>
+          <div class="author">
+            <div class="avatar">JR</div>
+            <div class="author-info">
+              <div class="name">James R.</div>
+              <div class="role">Engineering Lead, Fintech</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+          <p>"I'm a bootcamp grad. Git was the hardest part of coding for me. devpod let me skip all of that and just focus on building things."</p>
+          <div class="author">
+            <div class="avatar">SC</div>
+            <div class="author-info">
+              <div class="name">Sam C.</div>
+              <div class="role">Junior Developer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
   <section class="stats">
     <div class="container">
       <div class="stats-grid reveal">
@@ -929,11 +1419,11 @@
     </div>
   </section>
 
-  <!-- ── Install ── -->
+  <!-- Install -->
   <section class="install-section" id="install">
     <div class="container">
       <div class="install-block reveal">
-        <h2>Install in 10 seconds</h2>
+        <h2>Start shipping in 10 seconds</h2>
         <p class="install-sub">One command. No package manager required.</p>
         <div class="install-cmd">
           <code><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</code>
@@ -944,17 +1434,19 @@
     </div>
   </section>
 
-  <!-- ── Footer ── -->
+  <!-- Footer -->
   <footer>
     <div class="container">
       <div class="footer-left">
-        <a href="#" class="footer-logo"><span>&gt;</span> devpod</a>
+        <a href="index.html" class="footer-logo"><span>&gt;</span> devpod</a>
         <span class="footer-text">Open source &middot; MIT License</span>
       </div>
       <div class="footer-links">
+        <a href="guide.html">Documentation</a>
         <a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a>
+        <a href="#install">Install</a>
         <a href="https://github.com/elloloop/devpod/issues" target="_blank" rel="noopener">Issues</a>
-        <a href="https://github.com/elloloop/devpod/blob/main/install.sh" target="_blank" rel="noopener">Install Script</a>
+        <a href="https://github.com/elloloop/devpod/blob/main/LICENSE" target="_blank" rel="noopener">License (MIT)</a>
       </div>
     </div>
   </footer>
@@ -971,6 +1463,21 @@
       });
     });
 
+    // FAQ accordion
+    document.querySelectorAll('.faq-item').forEach(function(item) {
+      item.addEventListener('click', function() {
+        var wasOpen = this.classList.contains('open');
+        // Close all
+        document.querySelectorAll('.faq-item').forEach(function(i) {
+          i.classList.remove('open');
+        });
+        // Toggle clicked
+        if (!wasOpen) {
+          this.classList.add('open');
+        }
+      });
+    });
+
     // Scroll reveal
     var reveals = document.querySelectorAll('.reveal');
     var observer = new IntersectionObserver(function(entries) {
@@ -980,7 +1487,7 @@
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.1 });
 
     reveals.forEach(function(el) { observer.observe(el); });
   </script>

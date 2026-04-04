@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>devpod Documentation &mdash; Complete Guide</title>
+  <meta name="description" content="Complete documentation for devpod: stacked diffs, local CI, version history. Covers installation, commands, workflows, configuration, and AI agent instructions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #09090b;
+      --bg-elevated: #18181b;
+      --bg-subtle: #111113;
+      --bg-code: #0f0f14;
+      --text: #e4e4e7;
+      --text-muted: #a1a1aa;
+      --text-dim: #71717a;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-subtle: rgba(99, 102, 241, 0.08);
+      --accent-border: rgba(99, 102, 241, 0.2);
+      --green: #22c55e;
+      --yellow: #eab308;
+      --cyan: #06b6d4;
+      --purple: #a78bfa;
+      --red: #ef4444;
+      --border: #1e1e22;
+      --border-hover: #2e2e34;
+      --sidebar-w: 280px;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 80px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    code, .mono {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      height: 64px;
+    }
+
+    nav .nav-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    nav .logo {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    nav .logo span { color: var(--accent); }
+
+    nav .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+      align-items: center;
+    }
+
+    nav .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover { color: var(--text); }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+      padding-top: 64px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 28px 0;
+      z-index: 50;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    .sidebar-section {
+      margin-bottom: 8px;
+    }
+
+    .sidebar-heading {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+      padding: 8px 24px;
+      margin-bottom: 2px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 6px 24px 6px 32px;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+
+    .sidebar a:hover {
+      color: var(--text);
+      background: var(--accent-subtle);
+    }
+
+    .sidebar a.active {
+      color: var(--accent);
+      border-left-color: var(--accent);
+      background: var(--accent-subtle);
+    }
+
+    .sidebar a.sub {
+      padding-left: 44px;
+      font-size: 0.75rem;
+    }
+
+    /* ── Main content ── */
+    .main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      min-width: 0;
+    }
+
+    .content {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 48px 40px 120px;
+    }
+
+    /* ── Typography ── */
+    .content h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 12px;
+      line-height: 1.15;
+    }
+
+    .content h1 .gradient {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 50%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .content .lead {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      margin-bottom: 48px;
+      line-height: 1.7;
+      max-width: 640px;
+    }
+
+    .content h2 {
+      font-size: 1.625rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-top: 72px;
+      margin-bottom: 16px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      line-height: 1.2;
+    }
+
+    .content h2:first-of-type {
+      margin-top: 0;
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .content h3 {
+      font-size: 1.1875rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-top: 48px;
+      margin-bottom: 12px;
+    }
+
+    .content h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-top: 32px;
+      margin-bottom: 10px;
+    }
+
+    .content p {
+      margin-bottom: 16px;
+      color: var(--text-muted);
+      line-height: 1.75;
+    }
+
+    .content strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .content a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .content a:hover {
+      border-bottom-color: var(--accent);
+    }
+
+    .content ul, .content ol {
+      margin-bottom: 16px;
+      padding-left: 24px;
+      color: var(--text-muted);
+    }
+
+    .content li {
+      margin-bottom: 8px;
+      line-height: 1.7;
+    }
+
+    .content li code {
+      font-size: 0.8125rem;
+    }
+
+    .content hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      position: relative;
+      margin: 20px 0 28px;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .code-block-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: rgba(30, 30, 34, 0.5);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .code-block pre {
+      padding: 20px 24px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8125rem;
+      line-height: 1.85;
+      color: var(--text-muted);
+    }
+
+    .code-block .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.6875rem;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .code-block .copy-btn:hover {
+      color: var(--text);
+      border-color: var(--text-dim);
+    }
+
+    /* Inline code */
+    .content p code,
+    .content li code,
+    .content td code,
+    .content .callout code {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 2px 7px;
+      font-size: 0.8125rem;
+      color: var(--accent-hover);
+    }
+
+    /* Syntax colors for code blocks */
+    .code-block .prompt { color: var(--accent); }
+    .code-block .cmd { color: var(--text); font-weight: 500; }
+    .code-block .arg { color: var(--yellow); }
+    .code-block .comment { color: var(--text-dim); font-style: italic; }
+    .code-block .success { color: var(--green); }
+    .code-block .info { color: var(--text-muted); }
+    .code-block .flag { color: var(--cyan); }
+    .code-block .output { color: var(--text-dim); }
+
+    /* ── Tables ── */
+    .content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 28px;
+      font-size: 0.875rem;
+    }
+
+    .content thead th {
+      text-align: left;
+      padding: 12px 16px;
+      font-weight: 600;
+      color: var(--text);
+      border-bottom: 2px solid var(--border);
+      font-size: 0.8125rem;
+    }
+
+    .content tbody td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-muted);
+      vertical-align: top;
+      line-height: 1.6;
+    }
+
+    .content tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .content tbody tr:hover {
+      background: var(--accent-subtle);
+    }
+
+    /* ── Callouts ── */
+    .callout {
+      margin: 24px 0;
+      padding: 20px 24px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+
+    .callout.tip {
+      border-left: 3px solid var(--green);
+    }
+
+    .callout.warning {
+      border-left: 3px solid var(--yellow);
+    }
+
+    .callout.info {
+      border-left: 3px solid var(--accent);
+    }
+
+    .callout.agent {
+      border-left: 3px solid var(--cyan);
+      background: rgba(6, 182, 212, 0.04);
+    }
+
+    .callout .callout-title {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .callout.tip .callout-title { color: var(--green); }
+    .callout.warning .callout-title { color: var(--yellow); }
+    .callout.info .callout-title { color: var(--accent); }
+    .callout.agent .callout-title { color: var(--cyan); }
+
+    .callout p {
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+    }
+
+    .callout p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ── Anchor links ── */
+    .content h2 .anchor,
+    .content h3 .anchor {
+      color: var(--text-dim);
+      text-decoration: none;
+      margin-left: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      font-weight: 400;
+    }
+
+    .content h2:hover .anchor,
+    .content h3:hover .anchor {
+      opacity: 1;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1024px) {
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: 90;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 80;
+      }
+
+      .sidebar-overlay.open {
+        display: block;
+      }
+
+      .main {
+        margin-left: 0;
+      }
+
+      .content {
+        padding: 32px 24px 100px;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .content h1 {
+        font-size: 1.75rem;
+      }
+
+      .content h2 {
+        font-size: 1.375rem;
+      }
+
+      .code-block pre {
+        padding: 16px 18px;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="nav-inner">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="mobile-menu-btn" id="menuBtn" aria-label="Toggle menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <a href="index.html" class="logo"><span>&gt;</span> devpod</a>
+      </div>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Sidebar overlay for mobile -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Getting Started</div>
+        <a href="#getting-started">Overview</a>
+        <a href="#install" class="sub">Install</a>
+        <a href="#clone-a-repo" class="sub">Clone a Repo</a>
+        <a href="#first-feature" class="sub">First Feature</a>
+        <a href="#first-diff" class="sub">First Diff</a>
+        <a href="#submit-for-review" class="sub">Submit for Review</a>
+        <a href="#land" class="sub">Land (Ship It)</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Core Concepts</div>
+        <a href="#core-concepts">Overview</a>
+        <a href="#features-concept" class="sub">Features</a>
+        <a href="#diffs-concept" class="sub">Diffs</a>
+        <a href="#sync-concept" class="sub">Sync</a>
+        <a href="#submit-concept" class="sub">Submit</a>
+        <a href="#land-concept" class="sub">Land</a>
+        <a href="#versions-branch" class="sub">Versions Branch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Commands</div>
+        <a href="#commands">Reference</a>
+        <a href="#cmd-clone" class="sub">clone</a>
+        <a href="#cmd-feature" class="sub">feature / fix / docs / chore</a>
+        <a href="#cmd-diff" class="sub">diff</a>
+        <a href="#cmd-sync" class="sub">sync</a>
+        <a href="#cmd-switch" class="sub">switch</a>
+        <a href="#cmd-submit" class="sub">submit</a>
+        <a href="#cmd-land" class="sub">land</a>
+        <a href="#cmd-features" class="sub">features</a>
+        <a href="#cmd-diffs" class="sub">diffs</a>
+        <a href="#cmd-context" class="sub">context</a>
+        <a href="#cmd-status" class="sub">status</a>
+        <a href="#cmd-log" class="sub">log</a>
+        <a href="#cmd-undo" class="sub">undo</a>
+        <a href="#cmd-split" class="sub">split</a>
+        <a href="#cmd-config" class="sub">config</a>
+        <a href="#cmd-runner" class="sub">runner</a>
+        <a href="#cmd-run" class="sub">run</a>
+        <a href="#cmd-runs" class="sub">runs</a>
+        <a href="#cmd-workflows" class="sub">workflows</a>
+        <a href="#cmd-secret" class="sub">secret</a>
+        <a href="#cmd-dashboard" class="sub">dashboard</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Workflows</div>
+        <a href="#workflows">Overview</a>
+        <a href="#wf-solo" class="sub">Solo Developer</a>
+        <a href="#wf-team" class="sub">Team Workflow</a>
+        <a href="#wf-oss" class="sub">Open Source</a>
+        <a href="#wf-stacking" class="sub">Stacking Diffs</a>
+        <a href="#wf-editing-stack" class="sub">Editing a Stack</a>
+        <a href="#wf-conflicts" class="sub">Resolving Conflicts</a>
+        <a href="#wf-offline" class="sub">Working Offline</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Dashboard</div>
+        <a href="#dashboard">Overview</a>
+        <a href="#dashboard-diffs" class="sub">Reviewing Diffs</a>
+        <a href="#dashboard-versions" class="sub">Version History</a>
+        <a href="#dashboard-shortcuts" class="sub">Keyboard Shortcuts</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Local CI</div>
+        <a href="#local-ci">Overview</a>
+        <a href="#ci-runner" class="sub">Starting the Runner</a>
+        <a href="#ci-running" class="sub">Running Workflows</a>
+        <a href="#ci-secrets" class="sub">Secrets</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Configuration</div>
+        <a href="#configuration">Overview</a>
+        <a href="#config-llm" class="sub">LLM Setup</a>
+        <a href="#config-ci" class="sub">CI Auto-Run</a>
+        <a href="#config-branch" class="sub">Default Branch</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">For AI Agents</div>
+        <a href="#ai-agents">Agent Instructions</a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Troubleshooting</div>
+        <a href="#troubleshooting">Common Issues</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="content">
+
+        <h1>devpod <span class="gradient">Documentation</span></h1>
+        <p class="lead">
+          The complete guide to devpod &mdash; stacked diffs, local CI, version history, and a diff viewer powered by VS Code. Everything you need to ship code faster.
+        </p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- GETTING STARTED -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="getting-started">Getting Started <a href="#getting-started" class="anchor">#</a></h2>
+
+        <p>devpod is a developer workflow CLI. It wraps git with a simple set of commands built around stacked diffs, local CI, and version history. You can be productive in under 5 minutes.</p>
+
+        <h3 id="install">Install <a href="#install" class="anchor">#</a></h3>
+
+        <p>Install devpod with a single command. No package manager required.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</span></pre>
+        </div>
+
+        <p>Supported platforms: macOS (Apple Silicon and Intel) and Linux (x86_64 and ARM64). The binary is 6.6MB with zero dependencies.</p>
+
+        <p>Verify the installation:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod --version">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod --version</span>
+<span class="output">devpod version 0.x.x</span></pre>
+        </div>
+
+        <h3 id="clone-a-repo">Clone a Repo <a href="#clone-a-repo" class="anchor">#</a></h3>
+
+        <p>Clone any GitHub repository. devpod sets up the repo with its own metadata so it can track features, diffs, and versions.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod clone myorg/myrepo">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod clone</span> <span class="arg">myorg/myrepo</span>
+<span class="output">Cloning into 'myrepo'...
+&#10003; Repository ready</span></pre>
+        </div>
+
+        <div class="callout tip">
+          <div class="callout-title">Tip</div>
+          <p>You can also use devpod in an existing git repository. Just navigate to the repo and run any devpod command &mdash; it will initialize automatically.</p>
+        </div>
+
+        <h3 id="first-feature">Create Your First Feature <a href="#first-feature" class="anchor">#</a></h3>
+
+        <p>A feature is a unit of work. It maps to a git branch underneath, but you don't need to think about branches.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy='devpod feature "add user authentication"'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"add user authentication"</span>
+<span class="success">&#10003;</span> <span class="output">Started feat: add user authentication</span></pre>
+        </div>
+
+        <p>Now make some code changes. Edit files as you normally would.</p>
+
+        <h3 id="first-diff">Save Your First Diff <a href="#first-diff" class="anchor">#</a></h3>
+
+        <p>A diff is a snapshot of your changes. Think of it as a commit + PR combined. devpod stages all your changes and creates a diff.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy='devpod diff "add auth API endpoints"'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add auth API endpoints"</span>
+<span class="success">&#10003;</span> <span class="output">Created D1: feat(auth): add auth API endpoints</span>
+<span class="output">  +200/-0 &middot; 3 files</span></pre>
+        </div>
+
+        <p>If you omit the message, devpod uses an LLM to generate a title from your changes (if configured). You can also just run <code>devpod diff</code> with no arguments.</p>
+
+        <h3 id="submit-for-review">Submit for Review <a href="#submit-for-review" class="anchor">#</a></h3>
+
+        <p>Submit pushes your diffs to GitHub as pull requests and opens the local dashboard for review.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod submit">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod submit</span>
+<span class="success">&#10003;</span> <span class="output">Submitted 1 diff</span>
+<span class="output">  Review: http://localhost:3000/diffs/add-user-authentication</span></pre>
+        </div>
+
+        <h3 id="land">Land (Ship It) <a href="#land" class="anchor">#</a></h3>
+
+        <p>Land merges your approved diffs to the main branch.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod land">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod land</span>
+<span class="success">&#10003;</span> <span class="output">Landed D1: feat(auth): add auth API endpoints</span>
+<span class="output">  Feature complete!</span></pre>
+        </div>
+
+        <p>That's the entire basic workflow: <code>feature</code> &rarr; <code>diff</code> &rarr; <code>submit</code> &rarr; <code>land</code>.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- CORE CONCEPTS -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="core-concepts">Core Concepts <a href="#core-concepts" class="anchor">#</a></h2>
+
+        <h3 id="features-concept">Features <a href="#features-concept" class="anchor">#</a></h3>
+
+        <p>A <strong>feature</strong> is a unit of work &mdash; a bug fix, a new feature, a refactor, a documentation update. Under the hood, it maps to a git branch, but devpod manages the branch for you.</p>
+
+        <p>Create features with different prefixes depending on the type of work:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy='devpod feature "add search"
+devpod fix "login timeout"
+devpod docs "update API reference"
+devpod chore "upgrade dependencies"'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"add search"</span>        <span class="comment"># feat/add-search</span>
+<span class="prompt">$</span> <span class="cmd">devpod fix</span> <span class="arg">"login timeout"</span>        <span class="comment"># fix/login-timeout</span>
+<span class="prompt">$</span> <span class="cmd">devpod docs</span> <span class="arg">"update API reference"</span> <span class="comment"># docs/update-api-reference</span>
+<span class="prompt">$</span> <span class="cmd">devpod chore</span> <span class="arg">"upgrade dependencies"</span><span class="comment"># chore/upgrade-dependencies</span></pre>
+        </div>
+
+        <p>You can have multiple features in progress. Use <code>devpod features</code> to list them and <code>devpod switch</code> to move between them.</p>
+
+        <h3 id="diffs-concept">Diffs <a href="#diffs-concept" class="anchor">#</a></h3>
+
+        <p>A <strong>diff</strong> is a reviewable unit of change within a feature. One feature can have multiple diffs, forming a <strong>stack</strong>. Each diff becomes its own GitHub PR.</p>
+
+        <ul>
+          <li><strong>D1, D2, D3...</strong> &mdash; diffs are numbered sequentially within a feature</li>
+          <li><strong>Stacking</strong> &mdash; each subsequent diff builds on the previous one</li>
+          <li><strong>Versioning</strong> &mdash; every time you update a diff, a new version (v1, v2, v3...) is saved</li>
+          <li><strong>Auto-rebase</strong> &mdash; when you edit a diff in the middle of a stack, all subsequent diffs rebase automatically</li>
+        </ul>
+
+        <h3 id="sync-concept">Sync <a href="#sync-concept" class="anchor">#</a></h3>
+
+        <p><strong>Sync</strong> pulls the latest changes from the main branch and rebases your diffs on top. Run it regularly to stay up to date and avoid conflicts.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod sync">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod sync</span>
+<span class="success">&#10003;</span> <span class="output">Synced with latest code</span></pre>
+        </div>
+
+        <div class="callout warning">
+          <div class="callout-title">Important</div>
+          <p>Always run <code>devpod diff</code> to save your changes before <code>devpod sync</code>. Sync rebases your work and needs a clean working directory.</p>
+        </div>
+
+        <h3 id="submit-concept">Submit <a href="#submit-concept" class="anchor">#</a></h3>
+
+        <p><strong>Submit</strong> pushes your diffs to GitHub as pull requests and opens the devpod dashboard for review. Each diff in the stack becomes a separate PR, linked together.</p>
+
+        <h3 id="land-concept">Land <a href="#land-concept" class="anchor">#</a></h3>
+
+        <p><strong>Land</strong> merges your diffs to the main branch. Diffs are landed in order (D1 first, then D2, etc.). Each diff is squash-merged into a clean commit.</p>
+
+        <h3 id="versions-branch">The Versions Branch <a href="#versions-branch" class="anchor">#</a></h3>
+
+        <p>devpod stores version history in a special <code>devpod/versions</code> branch. Every time you create or update a diff, the full state is saved as a version. This enables:</p>
+
+        <ul>
+          <li><strong>True interdiff</strong> &mdash; reviewers can see what changed between v1 and v2 of a diff, not just the full diff</li>
+          <li><strong>History browsing</strong> &mdash; you can go back to any version of any diff</li>
+          <li><strong>Audit trail</strong> &mdash; every change is recorded, nothing is lost</li>
+        </ul>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- COMMANDS REFERENCE -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="commands">Commands Reference <a href="#commands" class="anchor">#</a></h2>
+
+        <p>Complete reference for every devpod command. All commands should be run from within a devpod-managed repository.</p>
+
+        <!-- clone -->
+        <h3 id="cmd-clone">devpod clone <a href="#cmd-clone" class="anchor">#</a></h3>
+
+        <p>Clone a GitHub repository and initialize devpod tracking.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod clone myorg/myrepo">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod clone</span> <span class="arg">myorg/myrepo</span>
+<span class="prompt">$</span> <span class="cmd">devpod clone</span> <span class="arg">https://github.com/myorg/myrepo.git</span></pre>
+        </div>
+
+        <!-- feature -->
+        <h3 id="cmd-feature">devpod feature / fix / docs / chore / start <a href="#cmd-feature" class="anchor">#</a></h3>
+
+        <p>Start a new unit of work. Each variant sets a conventional commit prefix.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy='devpod feature "description"'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"add user search"</span>     <span class="comment"># prefix: feat</span>
+<span class="prompt">$</span> <span class="cmd">devpod fix</span> <span class="arg">"null pointer in auth"</span>     <span class="comment"># prefix: fix</span>
+<span class="prompt">$</span> <span class="cmd">devpod docs</span> <span class="arg">"add API examples"</span>        <span class="comment"># prefix: docs</span>
+<span class="prompt">$</span> <span class="cmd">devpod chore</span> <span class="arg">"update CI config"</span>       <span class="comment"># prefix: chore</span>
+<span class="prompt">$</span> <span class="cmd">devpod start</span> <span class="arg">"custom-prefix" "desc"</span>  <span class="comment"># custom prefix</span></pre>
+        </div>
+
+        <!-- diff -->
+        <h3 id="cmd-diff">devpod diff <a href="#cmd-diff" class="anchor">#</a></h3>
+
+        <p>Create or update a diff. This is the primary command you'll use &mdash; it stages all changes and creates a versioned snapshot.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Usage</span>
+            <button class="copy-btn" data-copy='devpod diff "message"'>Copy</button>
+          </div>
+          <pre><span class="comment"># Create a new diff with a message</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add login API"</span>
+
+<span class="comment"># Create a diff with auto-generated title (requires LLM config)</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span>
+
+<span class="comment"># Edit an existing diff (switch to it for editing)</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff edit</span> <span class="arg">D1</span>
+
+<span class="comment"># After editing, save changes (creates a new version)</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span>
+
+<span class="comment"># Continue after resolving conflicts</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="flag">--continue</span>
+
+<span class="comment"># Abort an in-progress operation</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="flag">--abort</span>
+
+<span class="comment"># Preview what would be included in the diff</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="flag">--preview</span>
+
+<span class="comment"># View version history of a diff</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff versions</span> <span class="arg">D1</span>
+
+<span class="comment"># Compare two versions of a diff</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff compare</span> <span class="arg">D1:v1 D1:v2</span>
+
+<span class="comment"># Check diff status (CI results, review status)</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff check</span></pre>
+        </div>
+
+        <!-- sync -->
+        <h3 id="cmd-sync">devpod sync <a href="#cmd-sync" class="anchor">#</a></h3>
+
+        <p>Pull latest changes from the main branch and rebase your diffs on top.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod sync">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod sync</span>
+
+<span class="comment"># Continue after resolving conflicts</span>
+<span class="prompt">$</span> <span class="cmd">devpod sync</span> <span class="flag">--continue</span>
+
+<span class="comment"># Abort a sync in progress</span>
+<span class="prompt">$</span> <span class="cmd">devpod sync</span> <span class="flag">--abort</span></pre>
+        </div>
+
+        <!-- switch -->
+        <h3 id="cmd-switch">devpod switch <a href="#cmd-switch" class="anchor">#</a></h3>
+
+        <p>Switch between features. Shows an interactive picker if no argument is given.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod switch">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod switch</span>                    <span class="comment"># interactive picker</span>
+<span class="prompt">$</span> <span class="cmd">devpod switch</span> <span class="arg">feat/add-search</span>     <span class="comment"># switch directly</span></pre>
+        </div>
+
+        <!-- submit -->
+        <h3 id="cmd-submit">devpod submit <a href="#cmd-submit" class="anchor">#</a></h3>
+
+        <p>Push diffs to GitHub as PRs and open the dashboard.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod submit">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod submit</span>
+
+<span class="comment"># Preview what would be submitted without pushing</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span> <span class="flag">--preview</span></pre>
+        </div>
+
+        <!-- land -->
+        <h3 id="cmd-land">devpod land <a href="#cmd-land" class="anchor">#</a></h3>
+
+        <p>Merge approved diffs to the main branch.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod land">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod land</span>
+
+<span class="comment"># Force land without approval checks</span>
+<span class="prompt">$</span> <span class="cmd">devpod land</span> <span class="flag">--force</span></pre>
+        </div>
+
+        <!-- features list -->
+        <h3 id="cmd-features">devpod features <a href="#cmd-features" class="anchor">#</a></h3>
+
+        <p>List all features in progress.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod features">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod features</span>
+<span class="output">  * feat/add-search      (2 diffs, current)
+    fix/login-timeout    (1 diff)
+    docs/api-reference   (0 diffs)</span></pre>
+        </div>
+
+        <!-- diffs list -->
+        <h3 id="cmd-diffs">devpod diffs <a href="#cmd-diffs" class="anchor">#</a></h3>
+
+        <p>List all diffs in the current feature.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod diffs">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod diffs</span>
+<span class="output">  D1  feat(auth): add API endpoints    v2  +200/-10  3 files
+  D2  feat(auth): add login form       v1  +150/-0   2 files</span></pre>
+        </div>
+
+        <!-- context -->
+        <h3 id="cmd-context">devpod context <a href="#cmd-context" class="anchor">#</a></h3>
+
+        <p>Show current context: which feature you're on, which diff, and the state of things.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod context">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod context</span>
+<span class="output">  Feature:  feat/add-search
+  Diff:     D2 (latest)
+  Branch:   feat/add-search
+  Base:     main
+  Diffs:    2 (D1 submitted, D2 in progress)</span></pre>
+        </div>
+
+        <!-- status -->
+        <h3 id="cmd-status">devpod status <a href="#cmd-status" class="anchor">#</a></h3>
+
+        <p>Show uncommitted changes in the working directory.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod status">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod status</span>
+<span class="output">  Modified:  src/auth/api.go
+  Added:     src/auth/middleware.go
+  2 files changed</span></pre>
+        </div>
+
+        <!-- log -->
+        <h3 id="cmd-log">devpod log <a href="#cmd-log" class="anchor">#</a></h3>
+
+        <p>Show the history of diffs and versions for the current feature.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod log">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod log</span></pre>
+        </div>
+
+        <!-- undo -->
+        <h3 id="cmd-undo">devpod undo <a href="#cmd-undo" class="anchor">#</a></h3>
+
+        <p>Undo the last operation. Keeps a history you can browse.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod undo">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod undo</span>            <span class="comment"># undo last operation</span>
+<span class="prompt">$</span> <span class="cmd">devpod undo</span> <span class="flag">--list</span>     <span class="comment"># show undo history</span></pre>
+        </div>
+
+        <!-- split -->
+        <h3 id="cmd-split">devpod split <a href="#cmd-split" class="anchor">#</a></h3>
+
+        <p>Split a diff into multiple smaller diffs. Useful when a diff grows too large.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod split">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod split</span></pre>
+        </div>
+
+        <!-- config -->
+        <h3 id="cmd-config">devpod config <a href="#cmd-config" class="anchor">#</a></h3>
+
+        <p>Get and set configuration values.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod config set llm.provider anthropic">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">llm.provider anthropic</span>
+<span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">llm.api_key sk-ant-...</span>
+<span class="prompt">$</span> <span class="cmd">devpod config get</span> <span class="arg">llm.provider</span>
+<span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">ci.auto_run true</span>
+<span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">default_branch main</span></pre>
+        </div>
+
+        <!-- runner -->
+        <h3 id="cmd-runner">devpod runner <a href="#cmd-runner" class="anchor">#</a></h3>
+
+        <p>Manage the local CI runner daemon.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod runner start">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod runner start</span>    <span class="comment"># start the daemon</span>
+<span class="prompt">$</span> <span class="cmd">devpod runner stop</span>     <span class="comment"># stop the daemon</span>
+<span class="prompt">$</span> <span class="cmd">devpod runner status</span>   <span class="comment"># check if running</span></pre>
+        </div>
+
+        <!-- run -->
+        <h3 id="cmd-run">devpod run <a href="#cmd-run" class="anchor">#</a></h3>
+
+        <p>Run a specific workflow locally.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod run ci.yml">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod run</span> <span class="arg">ci.yml</span>          <span class="comment"># run a specific workflow</span>
+<span class="prompt">$</span> <span class="cmd">devpod run</span> <span class="arg">ci.yml</span> <span class="flag">--job test</span> <span class="comment"># run a specific job</span></pre>
+        </div>
+
+        <!-- runs -->
+        <h3 id="cmd-runs">devpod runs <a href="#cmd-runs" class="anchor">#</a></h3>
+
+        <p>List recent CI runs.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod runs">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod runs</span></pre>
+        </div>
+
+        <!-- workflows -->
+        <h3 id="cmd-workflows">devpod workflows <a href="#cmd-workflows" class="anchor">#</a></h3>
+
+        <p>List available GitHub Actions workflows in the repository.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod workflows">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod workflows</span>
+<span class="output">  ci.yml          CI Pipeline
+  deploy.yml      Deploy to Production
+  lint.yml        Lint and Format</span></pre>
+        </div>
+
+        <!-- secret -->
+        <h3 id="cmd-secret">devpod secret <a href="#cmd-secret" class="anchor">#</a></h3>
+
+        <p>Manage secrets for local CI runs. Secrets are stored encrypted on your machine.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod secret set NPM_TOKEN">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod secret set</span> <span class="arg">NPM_TOKEN</span>         <span class="comment"># prompts for value</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret list</span>                   <span class="comment"># list secret names</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret delete</span> <span class="arg">NPM_TOKEN</span>       <span class="comment"># delete a secret</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret import</span> <span class="arg">.env</span>            <span class="comment"># import from .env file</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret sync</span>                   <span class="comment"># sync from GitHub secrets</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret status</span>                 <span class="comment"># show which secrets are set</span></pre>
+        </div>
+
+        <!-- dashboard -->
+        <h3 id="cmd-dashboard">devpod dashboard <a href="#cmd-dashboard" class="anchor">#</a></h3>
+
+        <p>Open the web dashboard for reviewing diffs, viewing CI results, and browsing version history.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod dashboard">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod dashboard</span>
+<span class="output">  Dashboard: http://localhost:3000</span></pre>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- WORKFLOWS -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="workflows">Workflows <a href="#workflows" class="anchor">#</a></h2>
+
+        <p>Common workflows for different scenarios. These show how devpod commands compose together in real-world usage.</p>
+
+        <h3 id="wf-solo">Solo Developer Workflow <a href="#wf-solo" class="anchor">#</a></h3>
+
+        <p>When you're working alone on a project:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Solo Workflow</span>
+            <button class="copy-btn" data-copy='devpod clone myorg/myrepo
+cd myrepo
+devpod feature "add search"
+
+# make changes...
+devpod diff "add search backend"
+
+# make more changes...
+devpod diff "add search UI"
+
+# ready to ship
+devpod submit
+devpod land'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod clone</span> <span class="arg">myorg/myrepo</span>
+<span class="prompt">$</span> <span class="cmd">cd</span> <span class="arg">myrepo</span>
+<span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"add search"</span>
+
+<span class="comment"># make changes...</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add search backend"</span>
+
+<span class="comment"># make more changes...</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add search UI"</span>
+
+<span class="comment"># ready to ship</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span>
+<span class="prompt">$</span> <span class="cmd">devpod land</span></pre>
+        </div>
+
+        <h3 id="wf-team">Team Workflow <a href="#wf-team" class="anchor">#</a></h3>
+
+        <p>When working with a team. Your teammates don't need devpod &mdash; they review on GitHub as usual.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Team Workflow</span>
+            <button class="copy-btn" data-copy='devpod feature "add payment processing"
+
+# first piece: the API
+devpod diff "add payment API"
+
+# second piece: the webhook handler
+devpod diff "add webhook handler"
+
+# submit both for review (creates 2 linked PRs)
+devpod submit
+
+# teammate reviews on GitHub, requests changes to D1
+devpod diff edit D1
+# make changes...
+devpod diff
+
+# re-submit (D2 auto-rebases)
+devpod submit
+
+# after approval
+devpod land'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"add payment processing"</span>
+
+<span class="comment"># first piece: the API</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add payment API"</span>
+
+<span class="comment"># second piece: the webhook handler</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add webhook handler"</span>
+
+<span class="comment"># submit both for review (creates 2 linked PRs)</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span>
+
+<span class="comment"># teammate reviews on GitHub, requests changes to D1</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff edit</span> <span class="arg">D1</span>
+<span class="comment"># make changes...</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span>
+
+<span class="comment"># re-submit (D2 auto-rebases)</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span>
+
+<span class="comment"># after approval</span>
+<span class="prompt">$</span> <span class="cmd">devpod land</span></pre>
+        </div>
+
+        <h3 id="wf-oss">Open Source Contributor Workflow <a href="#wf-oss" class="anchor">#</a></h3>
+
+        <p>Contributing to an open source project you don't own:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Open Source Workflow</span>
+            <button class="copy-btn" data-copy='devpod clone someorg/cool-project
+cd cool-project
+devpod fix "handle edge case in parser"
+
+# make the fix
+devpod diff "fix off-by-one in token parser"
+
+# submit creates a PR from your fork
+devpod submit'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod clone</span> <span class="arg">someorg/cool-project</span>
+<span class="prompt">$</span> <span class="cmd">cd</span> <span class="arg">cool-project</span>
+<span class="prompt">$</span> <span class="cmd">devpod fix</span> <span class="arg">"handle edge case in parser"</span>
+
+<span class="comment"># make the fix</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"fix off-by-one in token parser"</span>
+
+<span class="comment"># submit creates a PR from your fork</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span></pre>
+        </div>
+
+        <h3 id="wf-stacking">Stacking Multiple Diffs <a href="#wf-stacking" class="anchor">#</a></h3>
+
+        <p>The real power of devpod. Break a large feature into small, reviewable pieces:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Stacking Example</span>
+            <button class="copy-btn" data-copy='devpod feature "user profiles"
+
+# D1: database schema
+devpod diff "add user profile schema"
+
+# D2: API endpoints (builds on D1)
+devpod diff "add profile API endpoints"
+
+# D3: frontend (builds on D2)
+devpod diff "add profile page UI"
+
+# Submit all 3 as linked PRs
+devpod submit
+
+# Reviewer can approve D1 independently
+# Land D1 first, D2 and D3 auto-rebase
+devpod land'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"user profiles"</span>
+
+<span class="comment"># D1: database schema</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add user profile schema"</span>
+
+<span class="comment"># D2: API endpoints (builds on D1)</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add profile API endpoints"</span>
+
+<span class="comment"># D3: frontend (builds on D2)</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add profile page UI"</span>
+
+<span class="comment"># Submit all 3 as linked PRs</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span>
+
+<span class="comment"># Reviewer can approve D1 independently</span>
+<span class="comment"># Land D1 first, D2 and D3 auto-rebase</span>
+<span class="prompt">$</span> <span class="cmd">devpod land</span></pre>
+        </div>
+
+        <h3 id="wf-editing-stack">Editing a Diff in the Middle of a Stack <a href="#wf-editing-stack" class="anchor">#</a></h3>
+
+        <p>One of devpod's killer features. Edit any diff in the stack, and subsequent diffs rebase automatically:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Editing a Stack</span>
+            <button class="copy-btn" data-copy='# You have D1, D2, D3. Reviewer wants changes to D1.
+devpod diff edit D1
+
+# make changes to D1...
+
+devpod diff
+# D1 is now v2
+# D2 and D3 rebase automatically on top of the new D1'>Copy</button>
+          </div>
+          <pre><span class="comment"># You have D1, D2, D3. Reviewer wants changes to D1.</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff edit</span> <span class="arg">D1</span>
+
+<span class="comment"># make changes to D1...</span>
+
+<span class="prompt">$</span> <span class="cmd">devpod diff</span>
+<span class="success">&#10003;</span> <span class="output">Updated D1 &rarr; v2</span>
+<span class="output">  D2 rebased automatically.</span>
+<span class="output">  D3 rebased automatically.</span></pre>
+        </div>
+
+        <h3 id="wf-conflicts">Resolving Conflicts <a href="#wf-conflicts" class="anchor">#</a></h3>
+
+        <p>Conflicts can happen during <code>devpod sync</code> or when editing a diff in a stack. devpod guides you through resolution:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Conflict Resolution</span>
+            <button class="copy-btn" data-copy='devpod sync
+# Conflict detected in src/auth/api.go
+
+# Edit the file, remove conflict markers (<<<<<<<, =======, >>>>>>>)
+
+devpod sync --continue'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod sync</span>
+<span class="output">  Conflict in src/auth/api.go</span>
+
+<span class="comment"># Edit the file, remove conflict markers</span>
+<span class="comment"># (&lt;&lt;&lt;&lt;&lt;&lt;&lt;, =======, &gt;&gt;&gt;&gt;&gt;&gt;&gt;)</span>
+
+<span class="prompt">$</span> <span class="cmd">devpod sync</span> <span class="flag">--continue</span>
+<span class="success">&#10003;</span> <span class="output">Synced successfully</span>
+
+<span class="comment"># Or abort if you want to start over:</span>
+<span class="prompt">$</span> <span class="cmd">devpod sync</span> <span class="flag">--abort</span></pre>
+        </div>
+
+        <h3 id="wf-offline">Working Offline <a href="#wf-offline" class="anchor">#</a></h3>
+
+        <p>devpod works fully offline. You can create features, save diffs, edit stacks, and run local CI without a network connection. Just <code>devpod submit</code> when you're back online.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Offline Workflow</span>
+            <button class="copy-btn" data-copy='# All of these work offline:
+devpod feature "offline work"
+devpod diff "add feature"
+devpod diff edit D1
+devpod diff
+devpod diffs
+devpod context
+devpod run ci.yml
+
+# When back online:
+devpod sync
+devpod submit'>Copy</button>
+          </div>
+          <pre><span class="comment"># All of these work offline:</span>
+<span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"offline work"</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"add feature"</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff edit</span> <span class="arg">D1</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span>
+<span class="prompt">$</span> <span class="cmd">devpod diffs</span>
+<span class="prompt">$</span> <span class="cmd">devpod context</span>
+<span class="prompt">$</span> <span class="cmd">devpod run</span> <span class="arg">ci.yml</span>
+
+<span class="comment"># When back online:</span>
+<span class="prompt">$</span> <span class="cmd">devpod sync</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span></pre>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- DASHBOARD -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="dashboard">The Dashboard <a href="#dashboard" class="anchor">#</a></h2>
+
+        <p>devpod includes a web-based dashboard for reviewing diffs. It uses the Monaco Editor (the same engine as VS Code) for syntax-highlighted, side-by-side diff viewing.</p>
+
+        <h3 id="dashboard-diffs">Reviewing Diffs <a href="#dashboard-diffs" class="anchor">#</a></h3>
+
+        <p>Open the dashboard after submitting:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod dashboard">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod dashboard</span>
+<span class="output">  Dashboard: http://localhost:3000</span></pre>
+        </div>
+
+        <p>The dashboard shows:</p>
+        <ul>
+          <li>All diffs in the current feature, with their stack order</li>
+          <li>File changes for each diff with syntax highlighting</li>
+          <li>Side-by-side or unified diff view</li>
+          <li>CI run results</li>
+          <li>Version history for each diff</li>
+        </ul>
+
+        <h3 id="dashboard-versions">Version History <a href="#dashboard-versions" class="anchor">#</a></h3>
+
+        <p>Every time you update a diff, a new version is saved. The dashboard lets you compare any two versions &mdash; true interdiff. This is especially valuable for reviewers who want to see "what changed since my last review?" instead of re-reading the entire diff.</p>
+
+        <h3 id="dashboard-shortcuts">Keyboard Shortcuts <a href="#dashboard-shortcuts" class="anchor">#</a></h3>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Shortcut</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>j</code> / <code>k</code></td><td>Navigate between files</td></tr>
+            <tr><td><code>n</code> / <code>p</code></td><td>Next / previous diff in stack</td></tr>
+            <tr><td><code>s</code></td><td>Toggle side-by-side / unified</td></tr>
+            <tr><td><code>v</code></td><td>Open version picker</td></tr>
+            <tr><td><code>t</code></td><td>Toggle theme (dark / light / system)</td></tr>
+            <tr><td><code>?</code></td><td>Show keyboard shortcuts</td></tr>
+          </tbody>
+        </table>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- LOCAL CI -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="local-ci">Local CI Runner <a href="#local-ci" class="anchor">#</a></h2>
+
+        <p>devpod can run your GitHub Actions workflows locally. Same YAML files, same marketplace actions. Catch bugs in seconds on your machine instead of waiting for GitHub's CI.</p>
+
+        <h3 id="ci-runner">Starting the Runner <a href="#ci-runner" class="anchor">#</a></h3>
+
+        <p>The runner is a background daemon that watches for changes and runs workflows automatically (if configured).</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod runner start">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod runner start</span>
+<span class="success">&#10003;</span> <span class="output">Runner started (PID 12345)</span>
+
+<span class="prompt">$</span> <span class="cmd">devpod runner status</span>
+<span class="output">  Runner: running (PID 12345)</span>
+
+<span class="prompt">$</span> <span class="cmd">devpod runner stop</span>
+<span class="success">&#10003;</span> <span class="output">Runner stopped</span></pre>
+        </div>
+
+        <h3 id="ci-running">Running Workflows <a href="#ci-running" class="anchor">#</a></h3>
+
+        <p>Run workflows manually or let the runner trigger them automatically on each diff.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod run ci.yml">Copy</button>
+          </div>
+          <pre><span class="comment"># List available workflows</span>
+<span class="prompt">$</span> <span class="cmd">devpod workflows</span>
+
+<span class="comment"># Run a specific workflow</span>
+<span class="prompt">$</span> <span class="cmd">devpod run</span> <span class="arg">ci.yml</span>
+
+<span class="comment"># Run a specific job within a workflow</span>
+<span class="prompt">$</span> <span class="cmd">devpod run</span> <span class="arg">ci.yml</span> <span class="flag">--job test</span>
+
+<span class="comment"># View recent runs</span>
+<span class="prompt">$</span> <span class="cmd">devpod runs</span>
+
+<span class="comment"># Enable auto-run (runs CI on every diff)</span>
+<span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">ci.auto_run true</span></pre>
+        </div>
+
+        <h3 id="ci-secrets">Secrets Management <a href="#ci-secrets" class="anchor">#</a></h3>
+
+        <p>Your workflows likely need secrets (API keys, tokens). devpod stores these encrypted on your machine.</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy='devpod secret set NPM_TOKEN
+devpod secret import .env
+devpod secret list'>Copy</button>
+          </div>
+          <pre><span class="comment"># Set a secret (prompts for value)</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret set</span> <span class="arg">NPM_TOKEN</span>
+
+<span class="comment"># Import secrets from a .env file</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret import</span> <span class="arg">.env</span>
+
+<span class="comment"># Sync from GitHub repository secrets</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret sync</span>
+
+<span class="comment"># List configured secrets</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret list</span>
+<span class="output">  NPM_TOKEN       (set)
+  GITHUB_TOKEN    (set)
+  AWS_ACCESS_KEY  (not set)</span>
+
+<span class="comment"># Check status of all required secrets</span>
+<span class="prompt">$</span> <span class="cmd">devpod secret status</span></pre>
+        </div>
+
+        <div class="callout info">
+          <div class="callout-title">How it works</div>
+          <p>devpod reads your <code>.github/workflows/*.yml</code> files, parses the workflow definitions, and executes them locally using Docker containers (when available) or direct process execution. Marketplace actions are fetched and cached locally.</p>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- CONFIGURATION -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="configuration">Configuration <a href="#configuration" class="anchor">#</a></h2>
+
+        <p>devpod configuration is stored per-repository. Use <code>devpod config</code> to manage it.</p>
+
+        <h3 id="config-llm">LLM Setup <a href="#config-llm" class="anchor">#</a></h3>
+
+        <p>devpod can use an LLM to auto-generate diff titles from your code changes. Supported providers:</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Configuration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Anthropic</strong></td>
+              <td><code>devpod config set llm.provider anthropic</code><br><code>devpod config set llm.api_key sk-ant-...</code></td>
+            </tr>
+            <tr>
+              <td><strong>OpenAI</strong></td>
+              <td><code>devpod config set llm.provider openai</code><br><code>devpod config set llm.api_key sk-...</code></td>
+            </tr>
+            <tr>
+              <td><strong>Ollama</strong> (local)</td>
+              <td><code>devpod config set llm.provider ollama</code><br><code>devpod config set llm.model codellama</code></td>
+            </tr>
+            <tr>
+              <td><strong>Custom</strong></td>
+              <td><code>devpod config set llm.provider custom</code><br><code>devpod config set llm.endpoint https://...</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 id="config-ci">CI Auto-Run <a href="#config-ci" class="anchor">#</a></h3>
+
+        <p>Enable automatic CI runs whenever you create or update a diff:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod config set ci.auto_run true">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">ci.auto_run true</span></pre>
+        </div>
+
+        <h3 id="config-branch">Default Branch <a href="#config-branch" class="anchor">#</a></h3>
+
+        <p>Set the default branch if your repo uses something other than <code>main</code>:</p>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Terminal</span>
+            <button class="copy-btn" data-copy="devpod config set default_branch develop">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod config set</span> <span class="arg">default_branch develop</span></pre>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- AI AGENTS -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="ai-agents">For AI Agents <a href="#ai-agents" class="anchor">#</a></h2>
+
+        <div class="callout agent">
+          <div class="callout-title">Agent Instructions</div>
+          <p>This section is designed to be read by AI coding agents (Claude, GPT, Copilot, etc.) to enable them to use devpod on behalf of a developer.</p>
+        </div>
+
+        <h3>Quick Start for Agents</h3>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Agent Protocol</span>
+            <button class="copy-btn" data-copy='# 1. Check if devpod is installed
+devpod --version
+
+# 2. If not installed:
+curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh
+
+# 3. Navigate to the repository
+cd /path/to/repo
+
+# 4. Start a feature
+devpod feature "description of work"
+
+# 5. Make code changes
+# (edit files as needed)
+
+# 6. Create a diff
+devpod diff "what you did"
+
+# 7. If more changes needed, repeat steps 5-6
+# (this creates stacked diffs: D1, D2, D3...)
+
+# 8. Submit for review
+devpod submit
+
+# 9. After approval
+devpod land'>Copy</button>
+          </div>
+          <pre><span class="comment"># 1. Check if devpod is installed</span>
+<span class="prompt">$</span> <span class="cmd">devpod --version</span>
+
+<span class="comment"># 2. If not installed:</span>
+<span class="prompt">$</span> <span class="cmd">curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh</span>
+
+<span class="comment"># 3. Navigate to the repository</span>
+<span class="prompt">$</span> <span class="cmd">cd</span> <span class="arg">/path/to/repo</span>
+
+<span class="comment"># 4. Start a feature</span>
+<span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"description of work"</span>
+
+<span class="comment"># 5. Make code changes</span>
+
+<span class="comment"># 6. Create a diff</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="arg">"what you did"</span>
+
+<span class="comment"># 7. If more changes needed, repeat steps 5-6</span>
+<span class="comment"># (this creates stacked diffs: D1, D2, D3...)</span>
+
+<span class="comment"># 8. Submit for review</span>
+<span class="prompt">$</span> <span class="cmd">devpod submit</span>
+
+<span class="comment"># 9. After approval</span>
+<span class="prompt">$</span> <span class="cmd">devpod land</span></pre>
+        </div>
+
+        <h3>Key Rules for Agents</h3>
+
+        <ul>
+          <li><strong>Always <code>devpod diff</code> before <code>devpod sync</code></strong> &mdash; save changes first, then sync. Sync requires a clean working directory.</li>
+          <li><strong>One logical change per diff</strong> &mdash; keep diffs small and focused. If you're making multiple unrelated changes, use separate diffs.</li>
+          <li><strong>Use conventional commit style for diff messages</strong> &mdash; e.g., "add user validation", "fix timeout in auth handler", "update API docs".</li>
+          <li><strong>Check <code>devpod context</code> if unsure where you are</strong> &mdash; it shows the current feature, diff, and state.</li>
+          <li><strong>Check <code>devpod status</code> to see uncommitted changes</strong> &mdash; this tells you if there are changes that need to be saved as a diff.</li>
+          <li><strong>Use <code>devpod diff --preview</code></strong> to see what would be included before creating a diff.</li>
+          <li><strong>If an operation fails</strong>, check if you need <code>--continue</code> or <code>--abort</code> to resolve an interrupted operation.</li>
+        </ul>
+
+        <h3>Agent Decision Tree</h3>
+
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Decision Logic</span>
+            <button class="copy-btn" data-copy='# Starting work?
+devpod feature "description" → make changes → devpod diff "message"
+
+# More changes to add?
+make changes → devpod diff "message"  # creates D2, D3, etc.
+
+# Need to edit a previous diff?
+devpod diff edit D1 → make changes → devpod diff
+
+# Need latest code from main?
+devpod diff → devpod sync  # always save first!
+
+# Ready for review?
+devpod submit
+
+# Ready to merge?
+devpod land
+
+# Conflict during sync?
+edit files → devpod sync --continue
+
+# Interrupted operation?
+devpod diff --continue  OR  devpod diff --abort
+
+# Not sure what state you are in?
+devpod context
+devpod status'>Copy</button>
+          </div>
+          <pre><span class="comment"># Starting work?</span>
+<span class="cmd">devpod feature</span> <span class="arg">"description"</span> <span class="output">&rarr; make changes &rarr;</span> <span class="cmd">devpod diff</span> <span class="arg">"message"</span>
+
+<span class="comment"># More changes to add?</span>
+<span class="output">make changes &rarr;</span> <span class="cmd">devpod diff</span> <span class="arg">"message"</span>  <span class="comment"># creates D2, D3, etc.</span>
+
+<span class="comment"># Need to edit a previous diff?</span>
+<span class="cmd">devpod diff edit</span> <span class="arg">D1</span> <span class="output">&rarr; make changes &rarr;</span> <span class="cmd">devpod diff</span>
+
+<span class="comment"># Need latest code from main?</span>
+<span class="cmd">devpod diff</span> <span class="output">&rarr;</span> <span class="cmd">devpod sync</span>  <span class="comment"># always save first!</span>
+
+<span class="comment"># Ready for review?</span>
+<span class="cmd">devpod submit</span>
+
+<span class="comment"># Ready to merge?</span>
+<span class="cmd">devpod land</span>
+
+<span class="comment"># Conflict during sync?</span>
+<span class="output">edit files &rarr;</span> <span class="cmd">devpod sync</span> <span class="flag">--continue</span>
+
+<span class="comment"># Interrupted operation?</span>
+<span class="cmd">devpod diff</span> <span class="flag">--continue</span>  <span class="output">OR</span>  <span class="cmd">devpod diff</span> <span class="flag">--abort</span>
+
+<span class="comment"># Not sure what state you are in?</span>
+<span class="cmd">devpod context</span>
+<span class="cmd">devpod status</span></pre>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <!-- TROUBLESHOOTING -->
+        <!-- ══════════════════════════════════════════ -->
+
+        <h2 id="troubleshooting">Troubleshooting <a href="#troubleshooting" class="anchor">#</a></h2>
+
+        <p>Common issues and how to fix them.</p>
+
+        <h4>"You have unsaved changes"</h4>
+        <p>You have modified files that aren't saved as a diff yet. Run <code>devpod diff</code> to save them before proceeding.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Fix</span>
+            <button class="copy-btn" data-copy="devpod diff">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod diff</span></pre>
+        </div>
+
+        <h4>"A previous operation was interrupted"</h4>
+        <p>A rebase, sync, or diff edit was interrupted. You need to either continue or abort.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Fix</span>
+            <button class="copy-btn" data-copy="devpod diff --continue
+# or
+devpod diff --abort">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="flag">--continue</span>    <span class="comment"># finish the operation</span>
+<span class="comment"># or</span>
+<span class="prompt">$</span> <span class="cmd">devpod diff</span> <span class="flag">--abort</span>       <span class="comment"># discard and start over</span></pre>
+        </div>
+
+        <h4>"Not on a feature branch"</h4>
+        <p>You're on the main branch or a branch devpod doesn't recognize. Start a new feature first.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Fix</span>
+            <button class="copy-btn" data-copy='devpod feature "my work"'>Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod feature</span> <span class="arg">"my work"</span></pre>
+        </div>
+
+        <h4>Conflicts during sync</h4>
+        <p>Your changes conflict with updates from the main branch. Edit the conflicting files, remove the conflict markers (<code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code>, <code>=======</code>, <code>&gt;&gt;&gt;&gt;&gt;&gt;&gt;</code>), then continue.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Fix</span>
+            <button class="copy-btn" data-copy="# Edit conflicting files, then:
+devpod sync --continue">Copy</button>
+          </div>
+          <pre><span class="comment"># 1. Edit the conflicting files</span>
+<span class="comment"># 2. Remove conflict markers</span>
+<span class="comment"># 3. Continue:</span>
+<span class="prompt">$</span> <span class="cmd">devpod sync</span> <span class="flag">--continue</span></pre>
+        </div>
+
+        <h4>Dashboard not loading</h4>
+        <p>Make sure the runner is started and the dashboard command has been run.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Fix</span>
+            <button class="copy-btn" data-copy="devpod runner start
+devpod dashboard">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod runner start</span>
+<span class="prompt">$</span> <span class="cmd">devpod dashboard</span></pre>
+        </div>
+
+        <h4>Need to undo something</h4>
+        <p>devpod tracks operations so you can undo them.</p>
+        <div class="code-block">
+          <div class="code-block-header">
+            <span>Fix</span>
+            <button class="copy-btn" data-copy="devpod undo --list
+devpod undo">Copy</button>
+          </div>
+          <pre><span class="prompt">$</span> <span class="cmd">devpod undo</span> <span class="flag">--list</span>    <span class="comment"># see what can be undone</span>
+<span class="prompt">$</span> <span class="cmd">devpod undo</span>            <span class="comment"># undo last operation</span></pre>
+        </div>
+
+        <hr>
+
+        <p style="text-align:center; color: var(--text-dim); font-size: 0.875rem; margin-top: 48px;">
+          devpod is open source &middot; <a href="https://github.com/elloloop/devpod" style="color: var(--text-muted);">GitHub</a> &middot; <a href="https://github.com/elloloop/devpod/blob/main/LICENSE" style="color: var(--text-muted);">MIT License</a>
+        </p>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    // ── Copy to clipboard ──
+    document.querySelectorAll('.copy-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var text = this.getAttribute('data-copy');
+        navigator.clipboard.writeText(text).then(function() {
+          btn.textContent = 'Copied!';
+          setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+        });
+      });
+    });
+
+    // ── Mobile sidebar toggle ──
+    var menuBtn = document.getElementById('menuBtn');
+    var sidebar = document.getElementById('sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+
+    menuBtn.addEventListener('click', function() {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('open');
+    });
+
+    overlay.addEventListener('click', function() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('open');
+    });
+
+    // Close sidebar on link click (mobile)
+    sidebar.querySelectorAll('a').forEach(function(link) {
+      link.addEventListener('click', function() {
+        if (window.innerWidth <= 1024) {
+          sidebar.classList.remove('open');
+          overlay.classList.remove('open');
+        }
+      });
+    });
+
+    // ── Active sidebar link tracking ──
+    var sidebarLinks = sidebar.querySelectorAll('a[href^="#"]');
+    var headings = [];
+
+    sidebarLinks.forEach(function(link) {
+      var id = link.getAttribute('href').substring(1);
+      var el = document.getElementById(id);
+      if (el) headings.push({ id: id, el: el, link: link });
+    });
+
+    function updateActiveLink() {
+      var scrollY = window.scrollY + 120;
+      var active = null;
+
+      for (var i = headings.length - 1; i >= 0; i--) {
+        if (headings[i].el.offsetTop <= scrollY) {
+          active = headings[i];
+          break;
+        }
+      }
+
+      sidebarLinks.forEach(function(l) { l.classList.remove('active'); });
+      if (active) active.link.classList.add('active');
+    }
+
+    window.addEventListener('scroll', updateActiveLink, { passive: true });
+    updateActiveLink();
+  </script>
+
+</body>
+</html>
