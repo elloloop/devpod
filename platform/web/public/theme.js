@@ -21,9 +21,9 @@ window.DevpodTheme = (function () {
 
   var S = {
     default: {
-      label:'Default', accent:'#3b82f6',
-      d:['#0c0c0c','#141414','#1a1a1a','#1f1f1f','#262626','#2a2a2a','#1e1e1e','#e5e5e5','#a3a3a3','#525252','#3b82f6','#60a5fa','#22c55e','#ef4444','#f59e0b','#3b82f6','#111111','#404040','#0a2010','#0f3018','#200a0a','#3a1010','#0a1020','#60a5fa','#a78bfa','#86efac','#525252','#93c5fd','#fca5a5','#2563eb','#fff','vs-dark'],
-      l:['#ffffff','#fafafa','#f5f5f5','#eeeeee','#e5e5e5','#d4d4d4','#e5e5e5','#171717','#525252','#a3a3a3','#2563eb','#1d4ed8','#16a34a','#dc2626','#d97706','#2563eb','#fafafa','#a3a3a3','#f0fdf4','#dcfce7','#fef2f2','#fecaca','#eff6ff','#1d4ed8','#7c3aed','#16a34a','#9ca3af','#2563eb','#ea580c','#2563eb','#fff','light']
+      label:'Default', accent:'#e5e5e5',
+      d:['#0a0a0a','#111111','#171717','#1c1c1c','#222222','#262626','#1a1a1a','#e5e5e5','#a3a3a3','#525252','#ffffff','#e5e5e5','#22c55e','#ef4444','#f59e0b','#a3a3a3','#0e0e0e','#3a3a3a','#0a2010','#0f3018','#200a0a','#3a1010','#0d1018','#a3a3a3','#e5e5e5','#86efac','#525252','#e5e5e5','#fca5a5','#171717','#e5e5e5','vs-dark'],
+      l:['#ffffff','#fafafa','#f5f5f5','#eeeeee','#e5e5e5','#d4d4d4','#e5e5e5','#0a0a0a','#525252','#a3a3a3','#0a0a0a','#171717','#16a34a','#dc2626','#d97706','#525252','#fafafa','#a3a3a3','#f0fdf4','#dcfce7','#fef2f2','#fecaca','#f5f5f5','#525252','#0a0a0a','#16a34a','#9ca3af','#525252','#ea580c','#0a0a0a','#ffffff','light']
     },
     github: {
       label:'GitHub', accent:'#58a6ff',

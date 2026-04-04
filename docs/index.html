@@ -34,7 +34,7 @@
       --purple: var(--dp-accent-hover);
       --border: var(--dp-border-subtle);
       --border-hover: var(--dp-border);
-      --max-w: 1140px;
+      --max-w: 1400px;
     }
 
     html {
@@ -1144,6 +1144,7 @@
       <ul class="nav-links">
         <li><a href="#why">Why devpod</a></li>
         <li><a href="#features">Features</a></li>
+        <li><a href="#demo">Demo</a></li>
         <li><a href="#faq">FAQ</a></li>
         <li><a href="guide.html">Docs</a></li>
         <li><a href="https://github.com/elloloop/devpod" target="_blank" rel="noopener">GitHub</a></li>
@@ -1371,6 +1372,37 @@
           <code><span class="prompt-sym">$</span> <span class="cmd-text">devpod land</span></code>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- See it in action -->
+  <section style="padding:80px 0;border-top:1px solid var(--dp-border);" id="demo">
+    <div class="container">
+      <h2 style="text-align:center;margin-bottom:12px;">See it in action</h2>
+      <p style="text-align:center;max-width:600px;margin:0 auto 48px;color:var(--dp-text-secondary);font-size:16px;">Start the dashboard locally and explore your stacked diffs, run CI, and review code.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+        <a href="http://localhost:3000/diffs" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Stacked Diffs</div>
+          <div style="font-size:13px;color:var(--dp-text-secondary);">Review features broken into small, logical diffs. See version history and interdiff between review rounds.</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/diffs →</div>
+        </a>
+        <a href="http://localhost:3000/prs" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Commits & Diffs</div>
+          <div style="font-size:13px;color:var(--dp-text-secondary);">Browse real git history with a Phabricator-style diff viewer. Monaco Editor with full syntax highlighting.</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/prs →</div>
+        </a>
+        <a href="http://localhost:3000/runs" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Workflow Runs</div>
+          <div style="font-size:13px;color:var(--dp-text-secondary);">Monitor local CI runs in real-time. Same .github/workflows/ YAML, running on your machine.</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/runs →</div>
+        </a>
+        <a href="http://localhost:3000/features" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Feature Docs</div>
+          <div style="font-size:13px;color:var(--dp-text-secondary);">Auto-generated feature documentation with video demos. Show stakeholders what shipped without reading code.</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/features →</div>
+        </a>
+      </div>
+      <p style="text-align:center;margin-top:24px;font-size:12px;color:var(--dp-text-tertiary);">Start the dashboard: <code style="background:var(--dp-bg-tertiary);padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;">devpod dashboard</code></p>
     </div>
   </section>
 
