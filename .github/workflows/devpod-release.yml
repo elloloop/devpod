@@ -1,0 +1,73 @@
+name: Release devpod CLI
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            goos: linux
+            goarch: amd64
+          - os: ubuntu-latest
+            goos: linux
+            goarch: arm64
+          - os: macos-latest
+            goos: darwin
+            goarch: amd64
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: platform/cli-go/go.mod
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          cd platform/cli-go
+          go build -ldflags="-s -w -X github.com/elloloop/devpod/platform/cli-go/internal/commands.Version=${GITHUB_REF_NAME#v}" -o devpod-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/devpod/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: devpod-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: platform/cli-go/devpod-${{ matrix.goos }}-${{ matrix.goarch }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "devpod ${{ github.ref_name }}"
+          body: |
+            ## Install
+
+            ```sh
+            curl -fsSL https://raw.githubusercontent.com/elloloop/devpod/main/install.sh | sh
+            ```
+
+            Or download the binary for your platform below.
+
+            ## What's new
+
+            See [CHANGELOG.md](https://github.com/elloloop/devpod/blob/main/CHANGELOG.md) for details.
+          files: |
+            artifacts/devpod-*/*
+          draft: false
+          prerelease: false

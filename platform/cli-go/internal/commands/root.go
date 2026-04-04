@@ -2,11 +2,16 @@ package commands
 
 import "github.com/spf13/cobra"
 
+// Version is set at build time via ldflags:
+//
+//	go build -ldflags="-X github.com/elloloop/devpod/platform/cli-go/internal/commands.Version=1.2.3"
+var Version = "dev"
+
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
 		Use:     "devpod",
 		Short:   "Developer workflow CLI",
-		Version: "1.0.0",
+		Version: Version,
 	}
 
 	// Workflow commands
