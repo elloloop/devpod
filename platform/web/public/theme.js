@@ -121,8 +121,8 @@ window.DevpodTheme = (function () {
     var mb = c.querySelectorAll('[data-m]');
     for(var i=0;i<mb.length;i++){
       var b=mb[i], a=b.getAttribute('data-m')===curMode;
-      b.style.background = a ? 'var(--dp-accent)' : 'transparent';
-      b.style.color = a ? 'var(--dp-statusbar-text)' : 'var(--dp-text-tertiary)';
+      b.style.background = a ? 'var(--dp-bg-active)' : 'transparent';
+      b.style.color = a ? 'var(--dp-text)' : 'var(--dp-text-tertiary)';
     }
     // Scheme label
     var label = c.querySelector('[data-scheme-label]');
