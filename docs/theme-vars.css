@@ -152,23 +152,47 @@
 /* ── Code blocks & terminal ── */
 
 [data-dp-structural="brutalist"] .terminal,
-[data-dp-structural="brutalist"] .install-cmd,
-[data-dp-structural="brutalist"] pre,
-[data-dp-structural="brutalist"] code {
+[data-dp-structural="brutalist"] pre {
   border: 3px solid #000 !important;
   border-radius: 16px !important;
   box-shadow: 4px 4px 0px #000;
+  overflow: hidden !important;
 }
 
-/* ── Navigation: bordered pill ── */
-
-[data-dp-structural="brutalist"] nav,
-[data-dp-structural="brutalist"] nav .container,
-[data-dp-structural="brutalist"] .topnav {
+[data-dp-structural="brutalist"] .install-cmd {
   border: 3px solid #000 !important;
-  border-radius: 999px !important;
-  margin: 12px !important;
+  border-radius: 16px !important;
   box-shadow: 4px 4px 0px #000;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+}
+
+[data-dp-structural="brutalist"] code {
+  border: 2px solid #000 !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+}
+
+/* Don't pill-ify code inside pre/terminal */
+[data-dp-structural="brutalist"] pre code,
+[data-dp-structural="brutalist"] .terminal code,
+[data-dp-structural="brutalist"] .install-cmd code {
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+/* ── Navigation: bordered bar ── */
+
+[data-dp-structural="brutalist"] nav {
+  border-bottom: 3px solid #000 !important;
+  box-shadow: 0 4px 0px #000;
+}
+
+[data-dp-structural="brutalist"] .topnav {
+  border-bottom: 3px solid #000 !important;
+  box-shadow: 0 4px 0px #000;
 }
 
 /* ── Badges: pill with border ── */
