@@ -1375,36 +1375,123 @@
     </div>
   </section>
 
-  <!-- What you get -->
+  <!-- What you get — live UI previews -->
   <section style="padding:80px 0;border-top:1px solid var(--dp-border);" id="demo">
     <div class="container">
       <h2 style="text-align:center;margin-bottom:12px;">What you get</h2>
-      <p style="text-align:center;max-width:600px;margin:0 auto 48px;color:var(--dp-text-secondary);font-size:16px;">A local dashboard runs alongside the CLI. Review diffs, run CI, and track features — all on your machine.</p>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
-          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Stacked Diffs</div>
-          <div style="font-size:13px;color:var(--dp-text-secondary);">Review features broken into small, logical diffs. See version history and interdiff between review rounds.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod dashboard → /diffs</div>
-        </a>
-        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
-          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Commits & Diffs</div>
-          <div style="font-size:13px;color:var(--dp-text-secondary);">Browse real git history with a production-grade diff viewer. Monaco Editor with full syntax highlighting.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod dashboard → /prs</div>
-        </a>
-        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
-          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Workflow Runs</div>
-          <div style="font-size:13px;color:var(--dp-text-secondary);">Monitor local CI runs in real-time. Same .github/workflows/ YAML, running on your machine.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod run &lt;workflow&gt;</div>
-        </a>
-        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
-          <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Feature Docs</div>
-          <div style="font-size:13px;color:var(--dp-text-secondary);">Auto-generated feature documentation with video demos. Show stakeholders what shipped without reading code.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod dashboard → /features</div>
-        </a>
+      <p style="text-align:center;max-width:600px;margin:0 auto 48px;color:var(--dp-text-secondary);font-size:16px;">A local dashboard runs alongside the CLI. Click any preview to see it full-size.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:20px;">
+
+        <!-- Diff Viewer Preview -->
+        <div onclick="document.getElementById('preview-diff').showModal()" style="cursor:pointer;border:1px solid var(--dp-border);border-radius:8px;overflow:hidden;transition:border-color .2s,transform .15s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.transform='none'">
+          <div style="background:var(--dp-bg-secondary);font-family:'JetBrains Mono',monospace;font-size:11px;overflow:hidden;">
+            <div style="display:flex;align-items:center;padding:6px 10px;gap:6px;background:var(--dp-bg-tertiary);border-bottom:1px solid var(--dp-border);">
+              <span style="color:var(--dp-text-secondary)">← user-auth</span>
+              <span style="color:var(--dp-text-tertiary)">›</span>
+              <span style="color:var(--dp-accent);font-weight:700">D2</span>
+              <span style="color:var(--dp-text)">feat(auth): add login form</span>
+              <span style="margin-left:auto;color:var(--dp-success)">+47</span>
+              <span style="color:var(--dp-error)">-3</span>
+            </div>
+            <div style="display:flex;align-items:center;padding:3px 10px;gap:4px;border-bottom:1px solid var(--dp-border);font-size:10px">
+              <span style="padding:1px 4px;border-radius:3px;background:var(--dp-bg-active);color:var(--dp-success)">D1✓</span>
+              <span style="color:var(--dp-text-tertiary)">→</span>
+              <span style="padding:1px 4px;border-radius:3px;background:var(--dp-bg-active);color:var(--dp-text)">D2✓</span>
+              <span style="color:var(--dp-text-tertiary)">→</span>
+              <span style="padding:1px 4px;color:var(--dp-text-tertiary)">D3○</span>
+            </div>
+            <div style="background:var(--dp-bg);padding:0;font-size:12px;line-height:20px">
+              <div style="padding:3px 10px;background:var(--dp-diff-hunk-bg);color:var(--dp-diff-hunk-text);font-size:10px">@@ -0,0 +1,12 @@</div>
+              <div style="display:flex;background:var(--dp-diff-add-bg)"><span style="width:36px;text-align:right;padding-right:6px;color:var(--dp-gutter-text);background:var(--dp-diff-add-gutter);border-right:1px solid var(--dp-border)">1</span><span style="padding-left:8px"><span style="color:var(--dp-success)">+</span><span style="color:var(--dp-syntax-keyword)">import</span> { useState } <span style="color:var(--dp-syntax-keyword)">from</span> <span style="color:var(--dp-syntax-string)">"react"</span>;</span></div>
+              <div style="display:flex;background:var(--dp-diff-add-bg)"><span style="width:36px;text-align:right;padding-right:6px;color:var(--dp-gutter-text);background:var(--dp-diff-add-gutter);border-right:1px solid var(--dp-border)">2</span><span style="padding-left:8px"><span style="color:var(--dp-success)">+</span></span></div>
+              <div style="display:flex;background:var(--dp-diff-add-bg)"><span style="width:36px;text-align:right;padding-right:6px;color:var(--dp-gutter-text);background:var(--dp-diff-add-gutter);border-right:1px solid var(--dp-border)">3</span><span style="padding-left:8px"><span style="color:var(--dp-success)">+</span><span style="color:var(--dp-syntax-keyword)">export function</span> <span style="color:var(--dp-syntax-function)">LoginForm</span>() {</span></div>
+              <div style="display:flex;background:var(--dp-diff-add-bg)"><span style="width:36px;text-align:right;padding-right:6px;color:var(--dp-gutter-text);background:var(--dp-diff-add-gutter);border-right:1px solid var(--dp-border)">4</span><span style="padding-left:8px"><span style="color:var(--dp-success)">+</span>  <span style="color:var(--dp-syntax-keyword)">const</span> [email, setEmail] = <span style="color:var(--dp-syntax-function)">useState</span>(<span style="color:var(--dp-syntax-string)">""</span>);</span></div>
+              <div style="display:flex;background:var(--dp-diff-add-bg)"><span style="width:36px;text-align:right;padding-right:6px;color:var(--dp-gutter-text);background:var(--dp-diff-add-gutter);border-right:1px solid var(--dp-border)">5</span><span style="padding-left:8px"><span style="color:var(--dp-success)">+</span>  <span style="color:var(--dp-syntax-keyword)">const</span> [pass, setPass] = <span style="color:var(--dp-syntax-function)">useState</span>(<span style="color:var(--dp-syntax-string)">""</span>);</span></div>
+              <div style="display:flex;background:var(--dp-diff-add-bg)"><span style="width:36px;text-align:right;padding-right:6px;color:var(--dp-gutter-text);background:var(--dp-diff-add-gutter);border-right:1px solid var(--dp-border)">6</span><span style="padding-left:8px"><span style="color:var(--dp-success)">+</span>  <span style="color:var(--dp-syntax-comment)">// submit handler</span></span></div>
+            </div>
+            <div style="padding:4px 10px;background:var(--dp-statusbar);color:var(--dp-statusbar-text);font-size:10px;display:flex;gap:12px"><span>D2 of 3</span><span>LoginForm.tsx</span><span style="margin-left:auto">+47 -3</span></div>
+          </div>
+          <div style="padding:12px 16px;background:var(--dp-bg)">
+            <div style="font-size:13px;font-weight:600;color:var(--dp-text)">Diff Viewer</div>
+            <div style="font-size:12px;color:var(--dp-text-secondary);margin-top:4px">Monaco Editor with syntax highlighting, side-by-side diffs, stack navigation.</div>
+          </div>
+        </div>
+
+        <!-- Stacked Diffs Preview -->
+        <div onclick="document.getElementById('preview-stack').showModal()" style="cursor:pointer;border:1px solid var(--dp-border);border-radius:8px;overflow:hidden;transition:border-color .2s,transform .15s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.transform='translateY(-2px)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.transform='none'">
+          <div style="background:var(--dp-bg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:12px 16px;">
+            <div style="font-size:12px;font-weight:600;color:var(--dp-text);margin-bottom:10px;font-family:Inter,sans-serif">user authentication <span style="font-size:10px;padding:2px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-accent) 15%,transparent);color:var(--dp-accent);font-weight:500;margin-left:4px">feat</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--dp-border)"><span style="font-weight:700;color:var(--dp-text-tertiary);width:24px">D1</span><span style="color:var(--dp-text);font-size:12px">feat(auth): add API endpoints</span><span style="margin-left:auto;color:var(--dp-success);font-size:10px">✓ passed</span><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-success) 15%,transparent);color:var(--dp-success)">approved</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--dp-border)"><span style="font-weight:700;color:var(--dp-text-tertiary);width:24px">D2</span><span style="color:var(--dp-text);font-size:12px">feat(auth): add login form</span><span style="margin-left:auto;color:var(--dp-success);font-size:10px">✓ passed</span><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-info) 15%,transparent);color:var(--dp-info)">submitted</span></div>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 0"><span style="font-weight:700;color:var(--dp-text-tertiary);width:24px">D3</span><span style="color:var(--dp-text);font-size:12px">feat(auth): add E2E tests</span><span style="margin-left:auto;color:var(--dp-text-tertiary);font-size:10px">no ci</span><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--dp-bg-tertiary);color:var(--dp-text-tertiary)">draft</span></div>
+          </div>
+          <div style="padding:12px 16px;background:var(--dp-bg);border-top:1px solid var(--dp-border)">
+            <div style="font-size:13px;font-weight:600;color:var(--dp-text)">Stacked Diffs</div>
+            <div style="font-size:12px;color:var(--dp-text-secondary);margin-top:4px">Break features into small, reviewable pieces with version history and interdiff.</div>
+          </div>
+        </div>
+
+        <!-- CI Runs Preview -->
+        <div style="border:1px solid var(--dp-border);border-radius:8px;overflow:hidden;">
+          <div style="background:var(--dp-bg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:12px 16px;">
+            <div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--dp-border)"><span style="color:var(--dp-success)">✓</span><span style="color:var(--dp-text);font-size:12px">CI Pipeline</span><span style="margin-left:auto;color:var(--dp-text-tertiary);font-size:10px">2.3s</span></div>
+            <div style="padding-left:16px">
+              <div style="display:flex;align-items:center;gap:6px;padding:3px 0"><span style="color:var(--dp-success);font-size:10px">✓</span><span style="color:var(--dp-text-secondary)">Lint</span><span style="margin-left:auto;color:var(--dp-text-tertiary);font-size:10px">0.4s</span></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:3px 0"><span style="color:var(--dp-success);font-size:10px">✓</span><span style="color:var(--dp-text-secondary)">Build</span><span style="margin-left:auto;color:var(--dp-text-tertiary);font-size:10px">1.2s</span></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:3px 0"><span style="color:var(--dp-success);font-size:10px">✓</span><span style="color:var(--dp-text-secondary)">Test</span><span style="margin-left:auto;color:var(--dp-text-tertiary);font-size:10px">0.7s</span></div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;background:var(--dp-bg);border-top:1px solid var(--dp-border)">
+            <div style="font-size:13px;font-weight:600;color:var(--dp-text)">Local CI Runner</div>
+            <div style="font-size:12px;color:var(--dp-text-secondary);margin-top:4px">Your .github/workflows/ YAML, running locally in seconds. Same actions, same result.</div>
+          </div>
+        </div>
+
+        <!-- Feature Docs Preview -->
+        <div style="border:1px solid var(--dp-border);border-radius:8px;overflow:hidden;">
+          <div style="background:var(--dp-bg);font-family:'JetBrains Mono',monospace;font-size:11px;padding:12px 16px;">
+            <div style="font-size:13px;font-weight:700;color:var(--dp-text);margin-bottom:4px;font-family:Inter,sans-serif">OAuth Login <span style="font-size:10px;padding:2px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-success) 15%,transparent);color:var(--dp-success);font-weight:500;margin-left:4px">shipped</span></div>
+            <div style="font-size:11px;color:var(--dp-text-secondary);margin-bottom:8px;font-family:Inter,sans-serif">Added Google and GitHub OAuth with session management.</div>
+            <div style="background:var(--dp-bg-secondary);border-radius:4px;height:60px;display:flex;align-items:center;justify-content:center;color:var(--dp-text-tertiary);font-size:10px;border:1px solid var(--dp-border)">▶ demo.mp4</div>
+            <div style="display:flex;gap:4px;margin-top:6px">
+              <div style="background:var(--dp-bg-secondary);border-radius:3px;height:32px;flex:1;border:1px solid var(--dp-border)"></div>
+              <div style="background:var(--dp-bg-secondary);border-radius:3px;height:32px;flex:1;border:1px solid var(--dp-border)"></div>
+              <div style="background:var(--dp-bg-secondary);border-radius:3px;height:32px;flex:1;border:1px solid var(--dp-border)"></div>
+            </div>
+          </div>
+          <div style="padding:12px 16px;background:var(--dp-bg);border-top:1px solid var(--dp-border)">
+            <div style="font-size:13px;font-weight:600;color:var(--dp-text)">Feature Documentation</div>
+            <div style="font-size:12px;color:var(--dp-text-secondary);margin-top:4px">Auto-generated docs with video demos. Show stakeholders what shipped.</div>
+          </div>
+        </div>
+
       </div>
-      
     </div>
   </section>
+
+  <!-- Dialogs for full-size previews -->
+  <dialog id="preview-diff" style="max-width:900px;width:90vw;border:1px solid var(--dp-border);border-radius:12px;background:var(--dp-bg);padding:0;color:var(--dp-text)" onclick="if(event.target===this)this.close()">
+    <div style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid var(--dp-border)">
+      <span style="font-size:14px;font-weight:600">Diff Viewer Preview</span>
+      <button onclick="this.closest('dialog').close()" style="margin-left:auto;background:none;border:none;color:var(--dp-text-secondary);cursor:pointer;font-size:18px;padding:4px">✕</button>
+    </div>
+    <iframe src="themes.html" style="width:100%;height:70vh;border:none"></iframe>
+  </dialog>
+
+  <dialog id="preview-stack" style="max-width:700px;width:90vw;border:1px solid var(--dp-border);border-radius:12px;background:var(--dp-bg);padding:24px;color:var(--dp-text)" onclick="if(event.target===this)this.close()">
+    <div style="display:flex;align-items:center;margin-bottom:16px">
+      <span style="font-size:14px;font-weight:600">Stacked Diffs Preview</span>
+      <button onclick="this.closest('dialog').close()" style="margin-left:auto;background:none;border:none;color:var(--dp-text-secondary);cursor:pointer;font-size:18px;padding:4px">✕</button>
+    </div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:12px;border:1px solid var(--dp-border);border-radius:8px;overflow:hidden">
+      <div style="padding:12px 16px;background:var(--dp-bg-secondary);border-bottom:1px solid var(--dp-border)"><span style="font-weight:700;font-family:Inter,sans-serif">user authentication</span> <span style="font-size:10px;padding:2px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-accent) 15%,transparent);color:var(--dp-accent)">feat</span> <span style="color:var(--dp-text-tertiary);font-size:11px;margin-left:4px">3 diffs on feature/user-auth</span></div>
+      <div style="padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--dp-border)"><span style="font-weight:700;color:var(--dp-success);width:28px">D1</span><span style="flex:1">feat(auth): add API endpoints</span><span style="color:var(--dp-success);font-size:10px">+200</span><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-success) 15%,transparent);color:var(--dp-success)">✓ approved</span></div>
+      <div style="padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--dp-border)"><span style="font-weight:700;color:var(--dp-info);width:28px">D2</span><span style="flex:1">feat(auth): add login form</span><span style="color:var(--dp-success);font-size:10px">+150</span><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:color-mix(in srgb,var(--dp-info) 15%,transparent);color:var(--dp-info)">◑ submitted</span></div>
+      <div style="padding:10px 16px;display:flex;align-items:center;gap:10px"><span style="font-weight:700;color:var(--dp-text-tertiary);width:28px">D3</span><span style="flex:1">feat(auth): add E2E tests</span><span style="color:var(--dp-success);font-size:10px">+80</span><span style="font-size:10px;padding:1px 6px;border-radius:3px;background:var(--dp-bg-tertiary);color:var(--dp-text-tertiary)">○ draft</span></div>
+    </div>
+    <p style="margin-top:16px;font-size:12px;color:var(--dp-text-tertiary)">Run <code style="background:var(--dp-bg-tertiary);padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace">devpod dashboard</code> to see this live with your own diffs.</p>
+  </dialog>
 
   <!-- FAQ -->
   <section class="faq-section" id="faq">
