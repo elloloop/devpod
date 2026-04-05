@@ -1,71 +1,124 @@
 /*
- * DevPod Theme Variables — CSS defaults.
- * These are overridden at runtime by theme.js, but provide
- * a flash-free default (Linear Dark) for the initial paint.
+ * DevPod Theme Variables — CSS defaults + structural tokens.
+ * Overridden at runtime by theme.js.
  */
 
 :root {
   /* Backgrounds */
-  --dp-bg: #0c0c0c;
-  --dp-bg-secondary: #141414;
-  --dp-bg-tertiary: #18181b;
-  --dp-bg-hover: #1c1c1f;
-  --dp-bg-active: #27272a;
+  --dp-bg: #0a0a0a;
+  --dp-bg-secondary: #111111;
+  --dp-bg-tertiary: #171717;
+  --dp-bg-hover: #1c1c1c;
+  --dp-bg-active: #222222;
 
   /* Borders */
-  --dp-border: #27272a;
-  --dp-border-subtle: #1e1e22;
+  --dp-border: #262626;
+  --dp-border-subtle: #1a1a1a;
 
   /* Text */
-  --dp-text: #e4e4e7;
-  --dp-text-secondary: #a1a1aa;
-  --dp-text-tertiary: #52525b;
+  --dp-text: #e5e5e5;
+  --dp-text-secondary: #a3a3a3;
+  --dp-text-tertiary: #525252;
 
   /* Accent */
-  --dp-accent: #3b82f6;
-  --dp-accent-hover: #60a5fa;
+  --dp-accent: #ffffff;
+  --dp-accent-hover: #e5e5e5;
 
   /* Status */
-  --dp-success: #34d399;
-  --dp-error: #f87171;
-  --dp-warning: #fbbf24;
-  --dp-info: #60a5fa;
+  --dp-success: #22c55e;
+  --dp-error: #ef4444;
+  --dp-warning: #f59e0b;
+  --dp-info: #a3a3a3;
 
   /* Code / Diff */
-  --dp-gutter-bg: #0f0f11;
-  --dp-gutter-text: #3f3f46;
-  --dp-diff-add-bg: #052e16;
-  --dp-diff-add-gutter: #064e3b;
-  --dp-diff-del-bg: #2c0b0e;
-  --dp-diff-del-gutter: #450a0a;
-  --dp-diff-hunk-bg: #0c0a1e;
-  --dp-diff-hunk-text: #3b82f6;
+  --dp-gutter-bg: #0e0e0e;
+  --dp-gutter-text: #3a3a3a;
+  --dp-diff-add-bg: #0a2010;
+  --dp-diff-add-gutter: #0f3018;
+  --dp-diff-del-bg: #200a0a;
+  --dp-diff-del-gutter: #3a1010;
+  --dp-diff-hunk-bg: #0d1018;
+  --dp-diff-hunk-text: #a3a3a3;
 
   /* Syntax */
-  --dp-syntax-keyword: #c084fc;
+  --dp-syntax-keyword: #e5e5e5;
   --dp-syntax-string: #86efac;
-  --dp-syntax-comment: #52525b;
-  --dp-syntax-function: #93c5fd;
-  --dp-syntax-number: #fda4af;
+  --dp-syntax-comment: #525252;
+  --dp-syntax-function: #e5e5e5;
+  --dp-syntax-number: #fca5a5;
 
   /* Status bar */
-  --dp-statusbar: #3b82f6;
-  --dp-statusbar-text: #ffffff;
+  --dp-statusbar: #171717;
+  --dp-statusbar-text: #e5e5e5;
 
-  /* Monaco theme name (read by JS, not a CSS render property) */
+  /* Monaco */
   --dp-monaco-theme: 'vs-dark';
-}
 
-/* ── Retro Peppy overrides (structural) ──
-   Applied when data-dp-scheme="retro" is on <html>. */
-
-[data-dp-scheme="retro"] {
-  --dp-border-width: 2px;
-  --dp-radius: 8px;
-}
-
-/* Default non-retro values */
-:root {
+  /* Structural tokens (overridden by Playful theme) */
   --dp-border-width: 1px;
   --dp-radius: 4px;
+  --dp-radius-lg: 8px;
+  --dp-shadow: none;
+  --dp-shadow-hover: none;
+  --dp-shadow-active: none;
+  --dp-font-weight-heading: 700;
+  --dp-letter-spacing: -0.02em;
+  --dp-padding-panel: 24px;
+}
+
+/* ─── Neo-Brutalist structural overrides ─── */
+
+[data-dp-structural="brutalist"] * {
+  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+[data-dp-structural="brutalist"] button,
+[data-dp-structural="brutalist"] a.nav-cta,
+[data-dp-structural="brutalist"] .btn-primary {
+  border: 3px solid #000 !important;
+  border-radius: 8px !important;
+  box-shadow: 4px 4px 0px #000;
+  font-weight: 700 !important;
+}
+
+[data-dp-structural="brutalist"] button:hover,
+[data-dp-structural="brutalist"] a.nav-cta:hover,
+[data-dp-structural="brutalist"] .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0px #000;
+}
+
+[data-dp-structural="brutalist"] button:active,
+[data-dp-structural="brutalist"] a.nav-cta:active,
+[data-dp-structural="brutalist"] .btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0px 0px 0px #000;
+}
+
+[data-dp-structural="brutalist"] .dashboard,
+[data-dp-structural="brutalist"] .card,
+[data-dp-structural="brutalist"] .feature-card,
+[data-dp-structural="brutalist"] .pull-quote,
+[data-dp-structural="brutalist"] .audience-card,
+[data-dp-structural="brutalist"] .faq-item,
+[data-dp-structural="brutalist"] .step-card,
+[data-dp-structural="brutalist"] section > .container > div[style*="border"] {
+  border: 3px solid #000 !important;
+  border-radius: 16px !important;
+  box-shadow: 4px 4px 0px #000;
+}
+
+[data-dp-structural="brutalist"] h1,
+[data-dp-structural="brutalist"] h2,
+[data-dp-structural="brutalist"] h3 {
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+}
+
+[data-dp-structural="brutalist"] .terminal,
+[data-dp-structural="brutalist"] .install-cmd,
+[data-dp-structural="brutalist"] code {
+  border: 3px solid #000 !important;
+  border-radius: 12px !important;
+  box-shadow: 4px 4px 0px #000;
 }
