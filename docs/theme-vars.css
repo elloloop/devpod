@@ -54,6 +54,9 @@
   /* Monaco */
   --dp-monaco-theme: 'vs-dark';
 
+  /* Accent contrast (text color on accent background) */
+  --dp-accent-contrast: #0a0a0a;
+
   /* Structural tokens (overridden by Playful theme) */
   --dp-border-width: 1px;
   --dp-radius: 4px;

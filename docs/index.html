@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>devpod — The workflow behind the fastest engineering teams</title>
-  <meta name="description" content="Stacked diffs, local CI, VS Code-quality diff viewer. devpod combines the best practices from Meta, Google, and Stripe into a single CLI that works with any GitHub repo.">
+  <meta name="description" content="Stacked diffs, local CI, VS Code-quality diff viewer. devpod combines proven engineering practices into a single CLI that works with any GitHub repo.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@
       align-items: center;
       gap: 6px;
       background: var(--accent);
-      color: var(--dp-statusbar-text);
+      color: var(--dp-accent-contrast);
       font-size: 0.875rem;
       font-weight: 600;
       padding: 8px 18px;
@@ -229,7 +229,7 @@
     .install-highlight .install-box .copy-btn {
       background: var(--accent);
       border: none;
-      color: var(--dp-statusbar-text);
+      color: var(--dp-accent-contrast);
       padding: 12px 20px;
       border-radius: 10px;
       font-size: 0.8125rem;
@@ -273,7 +273,7 @@
 
     .btn-primary {
       background: var(--accent);
-      color: var(--dp-statusbar-text);
+      color: var(--dp-accent-contrast);
     }
 
     .btn-primary:hover {
@@ -921,7 +921,7 @@
     .install-cmd .copy-btn {
       background: var(--accent);
       border: none;
-      color: var(--dp-statusbar-text);
+      color: var(--dp-accent-contrast);
       padding: 12px 20px;
       border-radius: 9px;
       font-size: 0.8125rem;
@@ -1167,7 +1167,7 @@
         Stacked diffs. Local CI.<br><span class="gradient">Zero ceremony.</span>
       </h1>
       <p class="subtitle">
-        devpod combines the best practices from Meta's stacked diffs, Google's code review, and VS&nbsp;Code's editor &mdash; in a single CLI that works with any GitHub repo.
+        devpod combines the best practices from stacked diff workflows, thorough code review, and VS&nbsp;Code's editor &mdash; in a single CLI that works with any GitHub repo.
       </p>
       <div class="install-highlight">
         <div class="install-box">
@@ -1240,19 +1240,19 @@
     <div class="container">
       <p class="section-label reveal">Why devpod exists</p>
       <h2 class="section-heading reveal">We studied how the best teams ship code.<br>Then we built the tool.</h2>
-      <p class="section-sub reveal">The practices that make Meta, Google, and Stripe engineering teams fast aren't proprietary. They just weren't available outside those companies. Until now.</p>
+      <p class="section-sub reveal">The practices that make the fastest engineering teams fast aren't proprietary. They just weren't available as a single tool. Until now.</p>
       <div class="pull-quotes reveal">
         <div class="pull-quote">
-          <p>At Meta, engineers use stacked diffs via Phabricator. Instead of one massive PR, every change is a small, reviewable piece that ships independently. Reviews take minutes, not days.</p>
-          <div class="source"><strong>Stacked Diffs</strong> &mdash; inspired by Meta's Phabricator workflow</div>
+          <p>The fastest engineering teams use stacked diffs. Instead of one massive PR, every change is a small, reviewable piece that ships independently. Reviews take minutes, not days.</p>
+          <div class="source"><strong>Stacked Diffs</strong> &mdash; used by top engineering teams worldwide</div>
         </div>
         <div class="pull-quote">
-          <p>At Google, every change gets a thorough code review with true interdiff between review rounds. Reviewers see exactly what changed since their last review, not the entire PR from scratch.</p>
-          <div class="source"><strong>Version History</strong> &mdash; inspired by Google's Critique review tool</div>
+          <p>In the best code review workflows, every change gets thorough review with true interdiff between rounds. Reviewers see exactly what changed since their last review, not the entire PR from scratch.</p>
+          <div class="source"><strong>Version History</strong> &mdash; the standard at elite engineering orgs</div>
         </div>
         <div class="pull-quote">
-          <p>At Stripe, engineers run CI locally before pushing. Bugs are caught in seconds on their machine, not minutes later in a remote pipeline. The feedback loop is near instant.</p>
-          <div class="source"><strong>Local CI</strong> &mdash; inspired by Stripe's engineering practices</div>
+          <p>The best teams run CI locally before pushing. Bugs are caught in seconds on your machine, not minutes later in a remote pipeline. The feedback loop is near instant.</p>
+          <div class="source"><strong>Local CI</strong> &mdash; a proven practice for shipping fast</div>
         </div>
         <div class="pull-quote">
           <p>These practices aren't secrets. They're just trapped inside custom internal tools that require massive infrastructure. devpod brings all of them to every team, as a single CLI.</p>
@@ -1375,34 +1375,34 @@
     </div>
   </section>
 
-  <!-- See it in action -->
+  <!-- What you get -->
   <section style="padding:80px 0;border-top:1px solid var(--dp-border);" id="demo">
     <div class="container">
-      <h2 style="text-align:center;margin-bottom:12px;">See it in action</h2>
-      <p style="text-align:center;max-width:600px;margin:0 auto 48px;color:var(--dp-text-secondary);font-size:16px;">Start the dashboard locally and explore your stacked diffs, run CI, and review code.</p>
+      <h2 style="text-align:center;margin-bottom:12px;">What you get</h2>
+      <p style="text-align:center;max-width:600px;margin:0 auto 48px;color:var(--dp-text-secondary);font-size:16px;">A local dashboard runs alongside the CLI. Review diffs, run CI, and track features — all on your machine.</p>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-        <a href="http://localhost:3000/diffs" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
           <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Stacked Diffs</div>
           <div style="font-size:13px;color:var(--dp-text-secondary);">Review features broken into small, logical diffs. See version history and interdiff between review rounds.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/diffs →</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod dashboard → /diffs</div>
         </a>
-        <a href="http://localhost:3000/prs" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
           <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Commits & Diffs</div>
-          <div style="font-size:13px;color:var(--dp-text-secondary);">Browse real git history with a Phabricator-style diff viewer. Monaco Editor with full syntax highlighting.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/prs →</div>
+          <div style="font-size:13px;color:var(--dp-text-secondary);">Browse real git history with a production-grade diff viewer. Monaco Editor with full syntax highlighting.</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod dashboard → /prs</div>
         </a>
-        <a href="http://localhost:3000/runs" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
           <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Workflow Runs</div>
           <div style="font-size:13px;color:var(--dp-text-secondary);">Monitor local CI runs in real-time. Same .github/workflows/ YAML, running on your machine.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/runs →</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod run &lt;workflow&gt;</div>
         </a>
-        <a href="http://localhost:3000/features" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
+        <a style="cursor:default" style="text-decoration:none;padding:24px;border:1px solid var(--dp-border);border-radius:8px;transition:border-color .2s,background .2s;" onmouseenter="this.style.borderColor='var(--dp-accent)';this.style.background='var(--dp-bg-hover)'" onmouseleave="this.style.borderColor='var(--dp-border)';this.style.background='transparent'">
           <div style="font-size:14px;font-weight:600;color:var(--dp-text);margin-bottom:6px;">Feature Docs</div>
           <div style="font-size:13px;color:var(--dp-text-secondary);">Auto-generated feature documentation with video demos. Show stakeholders what shipped without reading code.</div>
-          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">localhost:3000/features →</div>
+          <div style="margin-top:12px;font-size:11px;color:var(--dp-text-tertiary);font-family:'JetBrains Mono',monospace;">devpod dashboard → /features</div>
         </a>
       </div>
-      <p style="text-align:center;margin-top:24px;font-size:12px;color:var(--dp-text-tertiary);">Start the dashboard: <code style="background:var(--dp-bg-tertiary);padding:2px 6px;border-radius:3px;font-family:'JetBrains Mono',monospace;">devpod dashboard</code></p>
+      
     </div>
   </section>
 
