@@ -31,9 +31,9 @@ window.DevpodTheme = (function () {
       l:['#fff','#f6f8fa','#eaeef2','#eaeef2','#d0d7de','#d0d7de','#e1e4e8','#1f2328','#656d76','#8c959f','#0969da','#0550ae','#1a7f37','#cf222e','#9a6700','#0969da','#f6f8fa','#8c959f','#dafbe1','#aceebb','#ffebe9','#ffcecb','#ddf4ff','#0969da','#cf222e','#0a3069','#8c959f','#8250df','#0550ae','#0969da','#fff','light']
     },
     retro: {
-      label:'Playful', accent:'#000000', structural:true,
-      d:['#ffdf6b','#ffffff','#ffffff','#fff3b0','#fde68a','#000000','#000000','#000000','#333333','#666666','#000000','#333333','#16a34a','#dc2626','#f97316','#2563eb','#ffffff','#666666','#d9f99d','#bef264','#fce7f3','#fbcfe8','#fef9c3','#2563eb','#2563eb','#dc2626','#666666','#000000','#16a34a','#000000','#ffffff','light'],
-      l:['#ffdf6b','#ffffff','#ffffff','#fff3b0','#fde68a','#000000','#000000','#000000','#333333','#666666','#000000','#333333','#16a34a','#dc2626','#f97316','#2563eb','#ffffff','#666666','#d9f99d','#bef264','#fce7f3','#fbcfe8','#fef9c3','#2563eb','#2563eb','#dc2626','#666666','#000000','#16a34a','#000000','#ffffff','light']
+      label:'Playful', accent:'#c084fc', structural:true,
+      d:['#ffdf6b','#ffffff','#fff8dc','#fff3b0','#fde68a','#000000','#000000','#000000','#333333','#555555','#c084fc','#a855f7','#4ade80','#f43f5e','#f97316','#22d3ee','#ffffff','#555555','#d9f99d','#bef264','#fce7f3','#fbcfe8','#fef9c3','#2563eb','#2563eb','#f43f5e','#555555','#000000','#4ade80','#c084fc','#000000','light'],
+      l:['#ffdf6b','#ffffff','#fff8dc','#fff3b0','#fde68a','#000000','#000000','#000000','#333333','#555555','#c084fc','#a855f7','#4ade80','#f43f5e','#f97316','#22d3ee','#ffffff','#555555','#d9f99d','#bef264','#fce7f3','#fbcfe8','#fef9c3','#2563eb','#2563eb','#f43f5e','#555555','#000000','#4ade80','#c084fc','#000000','light']
     },
     midnight: {
       label:'Midnight', accent:'#22d3ee',

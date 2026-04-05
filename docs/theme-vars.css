@@ -66,34 +66,53 @@
   --dp-padding-panel: 24px;
 }
 
-/* ─── Neo-Brutalist structural overrides ─── */
+/* ─── Neo-Brutalist (Playful) structural overrides ─── */
+
+[data-dp-structural="brutalist"] {
+  --brutalist-border: 3px solid #000;
+  --brutalist-shadow: 6px 6px 0px #000;
+  --brutalist-shadow-lg: 8px 8px 0px #000;
+}
 
 [data-dp-structural="brutalist"] * {
-  transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease !important;
 }
+
+/* ── Buttons: pill-shaped, colorful, thick borders ── */
 
 [data-dp-structural="brutalist"] button,
 [data-dp-structural="brutalist"] a.nav-cta,
-[data-dp-structural="brutalist"] .btn-primary {
+[data-dp-structural="brutalist"] .btn-primary,
+[data-dp-structural="brutalist"] [class*="btn"] {
   border: 3px solid #000 !important;
-  border-radius: 8px !important;
+  border-radius: 999px !important;
   box-shadow: 4px 4px 0px #000;
   font-weight: 700 !important;
+  padding: 10px 24px !important;
+  font-size: 14px !important;
+}
+
+[data-dp-structural="brutalist"] a.nav-cta,
+[data-dp-structural="brutalist"] .btn-primary {
+  background: #c084fc !important;
+  color: #000 !important;
 }
 
 [data-dp-structural="brutalist"] button:hover,
 [data-dp-structural="brutalist"] a.nav-cta:hover,
 [data-dp-structural="brutalist"] .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 6px 6px 0px #000;
+  transform: translateY(-3px);
+  box-shadow: 6px 8px 0px #000;
 }
 
 [data-dp-structural="brutalist"] button:active,
 [data-dp-structural="brutalist"] a.nav-cta:active,
 [data-dp-structural="brutalist"] .btn-primary:active {
-  transform: translateY(2px);
+  transform: translateY(3px);
   box-shadow: 0px 0px 0px #000;
 }
+
+/* ── Cards: thick borders, big radius, solid shadows ── */
 
 [data-dp-structural="brutalist"] .dashboard,
 [data-dp-structural="brutalist"] .card,
@@ -102,23 +121,84 @@
 [data-dp-structural="brutalist"] .audience-card,
 [data-dp-structural="brutalist"] .faq-item,
 [data-dp-structural="brutalist"] .step-card,
+[data-dp-structural="brutalist"] .mod-card,
 [data-dp-structural="brutalist"] section > .container > div[style*="border"] {
   border: 3px solid #000 !important;
-  border-radius: 16px !important;
-  box-shadow: 4px 4px 0px #000;
+  border-radius: 20px !important;
+  box-shadow: 6px 6px 0px #000;
+  padding: 32px !important;
 }
 
-[data-dp-structural="brutalist"] h1,
+[data-dp-structural="brutalist"] .dashboard:hover,
+[data-dp-structural="brutalist"] .card:hover,
+[data-dp-structural="brutalist"] .feature-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 8px 10px 0px #000;
+}
+
+/* ── Typography: heavy, tight ── */
+
+[data-dp-structural="brutalist"] h1 {
+  font-weight: 900 !important;
+  letter-spacing: -0.05em !important;
+}
+
 [data-dp-structural="brutalist"] h2,
 [data-dp-structural="brutalist"] h3 {
   font-weight: 800 !important;
   letter-spacing: -0.04em !important;
 }
 
+/* ── Code blocks & terminal ── */
+
 [data-dp-structural="brutalist"] .terminal,
 [data-dp-structural="brutalist"] .install-cmd,
+[data-dp-structural="brutalist"] pre,
 [data-dp-structural="brutalist"] code {
   border: 3px solid #000 !important;
-  border-radius: 12px !important;
+  border-radius: 16px !important;
   box-shadow: 4px 4px 0px #000;
+}
+
+/* ── Navigation: bordered pill ── */
+
+[data-dp-structural="brutalist"] nav,
+[data-dp-structural="brutalist"] nav .container,
+[data-dp-structural="brutalist"] .topnav {
+  border: 3px solid #000 !important;
+  border-radius: 999px !important;
+  margin: 12px !important;
+  box-shadow: 4px 4px 0px #000;
+}
+
+/* ── Badges: pill with border ── */
+
+[data-dp-structural="brutalist"] .badge,
+[data-dp-structural="brutalist"] [class*="badge"] {
+  border: 2px solid #000 !important;
+  border-radius: 999px !important;
+  font-weight: 700 !important;
+  padding: 4px 12px !important;
+  box-shadow: 2px 2px 0px #000;
+}
+
+/* ── Status bar ── */
+
+[data-dp-structural="brutalist"] .statusbar {
+  border-top: 3px solid #000 !important;
+}
+
+/* ── Inputs ── */
+
+[data-dp-structural="brutalist"] input,
+[data-dp-structural="brutalist"] textarea {
+  border: 3px solid #000 !important;
+  border-radius: 12px !important;
+  box-shadow: 3px 3px 0px #000;
+}
+
+[data-dp-structural="brutalist"] input:focus,
+[data-dp-structural="brutalist"] textarea:focus {
+  box-shadow: 5px 5px 0px #000;
+  outline: none !important;
 }
